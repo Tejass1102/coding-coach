@@ -1,0 +1,29 @@
+### Test root
+GET http://127.0.0.1:8000/
+
+### Test embedding — simple code
+POST http://127.0.0.1:8000/api/analyze
+Content-Type: application/json
+
+{
+    "code": "def two_sum(nums, target):\n    seen = {}\n    for i, num in enumerate(nums):\n        diff = target - num\n        if diff in seen:\n            return [seen[diff], i]\n        seen[num] = i\n    return []",
+    "language": "python"
+}
+### Test approach detection
+POST http://127.0.0.1:8000/api/analyze
+Content-Type: application/json
+
+{
+    "code": "def binary_search(arr, target):\n    left, right = 0, len(arr)-1\n    while left <= right:\n        mid = (left+right)//2\n        if arr[mid] == target: return mid\n        elif arr[mid] < target: left = mid+1\n        else: right = mid-1\n    return -1",
+    "language": "python"
+}
+
+### Full analysis with Groq
+POST http://127.0.0.1:8000/api/analyze
+Content-Type: application/json
+
+{
+    "code": "def two_sum(nums, target):\n    for i in range(len(nums)):\n        for j in range(i+1, len(nums)):\n            if nums[i] + nums[j] == target:\n                return [i, j]\n    return []",
+    "language": "python",
+    "problem_name": "Two Sum"
+}
