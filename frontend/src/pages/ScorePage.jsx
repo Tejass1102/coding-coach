@@ -47,6 +47,8 @@ function ScorePage() {
       Greedy: "bg-yellow-900/40 text-yellow-400",
       "Binary Search": "bg-green-900/40 text-green-400",
       "Divide & Conquer": "bg-orange-900/40 text-orange-400",
+      "Hash Map": "bg-cyan-900/40 text-cyan-400",
+      "Two Pointers": "bg-pink-900/40 text-pink-400",
     };
     return colors[approach] || "bg-slate-700 text-slate-400";
   };

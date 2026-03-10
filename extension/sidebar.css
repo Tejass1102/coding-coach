@@ -1,0 +1,308 @@
+#coding-coach-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #2563eb;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 6px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+  font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+#coding-coach-btn:hover {
+  background: #1d4ed8;
+}
+
+#coding-coach-btn:disabled {
+  background: #1e3a5f;
+  cursor: not-allowed;
+  color: #94a3b8;
+}
+
+#coding-coach-sidebar {
+  position: fixed;
+  top: 0;
+  right: -420px;
+  width: 420px;
+  height: 100vh;
+  background: #0f172a;
+  border-left: 1px solid #1e293b;
+  z-index: 99999;
+  overflow-y: auto;
+  transition: right 0.3s ease;
+  font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+  box-shadow: -4px 0 24px rgba(0, 0, 0, 0.4);
+}
+
+#coding-coach-sidebar.open {
+  right: 0;
+}
+
+#cc-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid #1e293b;
+  background: #0f172a;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+#cc-header h2 {
+  color: white;
+  font-size: 16px;
+  font-weight: 700;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+#cc-close {
+  background: none;
+  border: none;
+  color: #64748b;
+  font-size: 20px;
+  cursor: pointer;
+  padding: 4px;
+  line-height: 1;
+}
+
+#cc-close:hover {
+  color: white;
+}
+
+#cc-content {
+  padding: 16px 20px;
+}
+
+.cc-section {
+  background: #1e293b;
+  border-radius: 10px;
+  padding: 14px;
+  margin-bottom: 12px;
+}
+
+.cc-section-title {
+  color: #94a3b8;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 8px;
+}
+
+.cc-approach {
+  color: #60a5fa;
+  font-size: 22px;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.cc-confidence {
+  font-size: 16px;
+  font-weight: 700;
+  margin-left: 8px;
+}
+
+.cc-confidence.high {
+  color: #22c55e;
+}
+.cc-confidence.medium {
+  color: #eab308;
+}
+.cc-confidence.low {
+  color: #ef4444;
+}
+
+.cc-bar-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 5px;
+}
+
+.cc-bar-label {
+  color: #94a3b8;
+  font-size: 11px;
+  width: 120px;
+  flex-shrink: 0;
+}
+
+.cc-bar-track {
+  flex: 1;
+  background: #0f172a;
+  border-radius: 4px;
+  height: 6px;
+}
+
+.cc-bar-fill {
+  background: #3b82f6;
+  height: 6px;
+  border-radius: 4px;
+  transition: width 0.5s ease;
+}
+
+.cc-bar-val {
+  color: #cbd5e1;
+  font-size: 11px;
+  width: 36px;
+  text-align: right;
+}
+
+.cc-complexity-item {
+  margin-bottom: 8px;
+}
+
+.cc-complexity-label {
+  color: #64748b;
+  font-size: 11px;
+  margin-bottom: 2px;
+}
+
+.cc-complexity-value {
+  color: #e2e8f0;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.cc-tip {
+  display: flex;
+  gap: 8px;
+  background: #172033;
+  border: 1px solid #1e3a5f;
+  border-radius: 6px;
+  padding: 8px 10px;
+  margin-bottom: 6px;
+}
+
+.cc-tip-num {
+  color: #3b82f6;
+  font-weight: 700;
+  font-size: 12px;
+  flex-shrink: 0;
+}
+
+.cc-tip-text {
+  color: #cbd5e1;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.cc-good {
+  display: flex;
+  gap: 8px;
+  background: #0f2318;
+  border: 1px solid #14532d;
+  border-radius: 6px;
+  padding: 8px 10px;
+  margin-bottom: 6px;
+}
+
+.cc-good-check {
+  color: #22c55e;
+  font-size: 12px;
+  flex-shrink: 0;
+}
+
+.cc-good-text {
+  color: #cbd5e1;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.cc-explanation {
+  color: #cbd5e1;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.cc-difficulty {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.cc-difficulty.beginner {
+  background: #14532d;
+  color: #22c55e;
+}
+.cc-difficulty.intermediate {
+  background: #713f12;
+  color: #eab308;
+}
+.cc-difficulty.advanced {
+  background: #7f1d1d;
+  color: #ef4444;
+}
+
+.cc-loading {
+  text-align: center;
+  padding: 40px 20px;
+  color: #64748b;
+}
+
+.cc-loading-spinner {
+  font-size: 32px;
+  margin-bottom: 12px;
+  animation: spin 1s linear infinite;
+  display: block;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.cc-error {
+  background: #2d0f0f;
+  border: 1px solid #7f1d1d;
+  border-radius: 8px;
+  padding: 12px;
+  color: #fca5a5;
+  font-size: 12px;
+  margin: 12px 0;
+}
+
+.cc-save-btn {
+  width: 100%;
+  background: #16a34a;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  margin-bottom: 8px;
+  transition: background 0.2s;
+}
+
+.cc-save-btn:hover {
+  background: #15803d;
+}
+.cc-save-btn:disabled {
+  background: #1e293b;
+  color: #475569;
+  cursor: not-allowed;
+}
+
+.cc-saved-msg {
+  text-align: center;
+  color: #22c55e;
+  font-size: 12px;
+  margin-bottom: 12px;
+}

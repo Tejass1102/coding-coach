@@ -16,7 +16,7 @@ from training_data import data, LABEL_NAMES
 EPOCHS = 50
 BATCH_SIZE = 8
 LEARNING_RATE = 5e-4
-NUM_CLASSES = 6
+NUM_CLASSES = 8
 MODEL_SAVE_PATH = "../models/approach_classifier.pt"
 
 # ─── Load CodeBERT ────────────────────────────────────
@@ -78,12 +78,12 @@ X_train, X_test, y_train, y_test = train_test_split(
 
 train_dataset = CodeDataset(X_train, y_train)
 test_dataset = CodeDataset(X_test, y_test)
-train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True)
+train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True, drop_last=True)
 test_loader = DataLoader(test_dataset, batch_size=BATCH_SIZE)
 
 # ─── Classifier Model ─────────────────────────────────
 class ApproachClassifier(nn.Module):
-    def __init__(self, input_dim=768, num_classes=6):
+    def __init__(self, input_dim=768, num_classes=8):
         super(ApproachClassifier, self).__init__()
         self.network = nn.Sequential(
             nn.Linear(input_dim, 256),
@@ -98,7 +98,7 @@ class ApproachClassifier(nn.Module):
     def forward(self, x):
         return self.network(x)
 
-model = ApproachClassifier()
+model = ApproachClassifier(num_classes=NUM_CLASSES)
 
 # ─── Class Weights ────────────────────────────────────
 # Gives more importance to underrepresented classes

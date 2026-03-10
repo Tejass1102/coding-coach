@@ -123,8 +123,9 @@ def calculate_readiness_score() -> dict:
 
     # ── Strong and Weak Areas ─────────────────────────────────
     all_possible = [
-        "Brute Force", "Sliding Window", "Dynamic Programming",
-        "Greedy", "Binary Search", "Divide & Conquer"
+    "Brute Force", "Sliding Window", "Dynamic Programming",
+    "Greedy", "Binary Search", "Divide & Conquer",
+    "Hash Map", "Two Pointers"
     ]
     strong_areas = [a for a in unique_approaches if a != "Brute Force"]
     weak_areas = [a for a in all_possible if a not in unique_approaches]

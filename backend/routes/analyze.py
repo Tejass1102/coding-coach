@@ -86,3 +86,78 @@ def get_readiness_score():
     """
     score_data = calculate_readiness_score()
     return score_data
+
+@router.post("/analyze-only")
+def analyze_code_only(input: CodeInput):
+    """
+    Analyzes code without saving to database
+    Used for auto-analyze feature
+    """
+    if not input.code.strip():
+        raise HTTPException(status_code=400, detail="Code cannot be empty")
+    if len(input.code) > 10000:
+        raise HTTPException(status_code=400, detail="Code too long")
+
+    embedding = get_code_embedding(input.code)
+    summary = get_embedding_summary(embedding)
+    approach = predict_approach(input.code)
+    analysis = analyze_with_gemini(
+        code=input.code,
+        approach=approach["predicted_approach"],
+        confidence=approach["confidence"],
+        all_scores=approach["all_scores"]
+    )
+
+    return {
+        "problem_name": input.problem_name,
+        "language": input.language,
+        "embedding_summary": summary,
+        "approach_detection": approach,
+        "analysis": analysis,
+        "saved": False,
+        "message": "✅ Analysis complete (not saved)"
+    }
+
+
+@router.post("/save-submission")
+def save_submission_endpoint(input: CodeInput):
+    """
+    Saves submission to database explicitly
+    Called when student clicks Save button
+    """
+    if not input.code.strip():
+        raise HTTPException(status_code=400, detail="Code cannot be empty")
+
+    embedding = get_code_embedding(input.code)
+    summary = get_embedding_summary(embedding)
+    approach = predict_approach(input.code)
+    analysis = analyze_with_gemini(
+        code=input.code,
+        approach=approach["predicted_approach"],
+        confidence=approach["confidence"],
+        all_scores=approach["all_scores"]
+    )
+
+    submission_id = save_submission(
+        problem_name=input.problem_name,
+        language=input.language,
+        code=input.code
+    )
+    analysis_id = save_analysis(
+        submission_id=submission_id,
+        approach_detection=approach,
+        analysis=analysis,
+        embedding_summary=summary
+    )
+
+    return {
+        "submission_id": submission_id,
+        "analysis_id": analysis_id,
+        "problem_name": input.problem_name,
+        "language": input.language,
+        "embedding_summary": summary,
+        "approach_detection": approach,
+        "analysis": analysis,
+        "saved": True,
+        "message": "✅ Analysis saved successfully"
+    }

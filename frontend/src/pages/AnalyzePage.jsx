@@ -1,27 +1,66 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import Editor from "@monaco-editor/react";
 import axios from "axios";
 
 const API = "http://127.0.0.1:8000/api";
+const DEBOUNCE_DELAY = 3000; // 3 seconds
 
 function AnalyzePage() {
   const [code, setCode] = useState("# Write your code here\n");
   const [language, setLanguage] = useState("python");
   const [problemName, setProblemName] = useState("");
   const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
+  const [saved, setSaved] = useState(false);
+  const [countdown, setCountdown] = useState(null);
+  const debounceTimer = useRef(null);
+  const countdownTimer = useRef(null);
 
-  const handleAnalyze = async () => {
+  // ── Auto analyze with debounce ──────────────────────
+  useEffect(() => {
+    // Don't analyze placeholder text
     if (!code.trim() || code.trim() === "# Write your code here") {
-      setError("Please write some code first!");
+      setCountdown(null);
       return;
     }
+
+    // Reset saved state when code changes
+    setSaved(false);
+
+    // Clear existing timers
+    if (debounceTimer.current) clearTimeout(debounceTimer.current);
+    if (countdownTimer.current) clearInterval(countdownTimer.current);
+
+    // Start countdown display
+    setCountdown(3);
+    let count = 3;
+    countdownTimer.current = setInterval(() => {
+      count -= 1;
+      setCountdown(count);
+      if (count <= 0) {
+        clearInterval(countdownTimer.current);
+        setCountdown(null);
+      }
+    }, 1000);
+
+    // Set debounce timer
+    debounceTimer.current = setTimeout(() => {
+      handleAutoAnalyze();
+    }, DEBOUNCE_DELAY);
+
+    return () => {
+      clearTimeout(debounceTimer.current);
+      clearInterval(countdownTimer.current);
+    };
+  }, [code, language]);
+
+  const handleAutoAnalyze = async () => {
     setLoading(true);
     setError(null);
-    setResult(null);
     try {
-      const response = await axios.post(`${API}/analyze`, {
+      const response = await axios.post(`${API}/analyze-only`, {
         code,
         language,
         problem_name: problemName || "Unknown Problem",
@@ -31,6 +70,25 @@ function AnalyzePage() {
       setError(err.response?.data?.detail || "Something went wrong!");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleSave = async () => {
+    if (!result) return;
+    setSaving(true);
+    setError(null);
+    try {
+      const response = await axios.post(`${API}/save-submission`, {
+        code,
+        language,
+        problem_name: problemName || "Unknown Problem",
+      });
+      setResult(response.data);
+      setSaved(true);
+    } catch (err) {
+      setError(err.response?.data?.detail || "Failed to save!");
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -44,7 +102,7 @@ function AnalyzePage() {
     <div className="max-w-6xl mx-auto px-6 py-8">
       <h1 className="text-3xl font-bold text-white mb-2">Analyze Your Code</h1>
       <p className="text-slate-400 mb-8">
-        Paste your solution and get instant AI-powered feedback
+        Write your code and get instant AI-powered feedback automatically
       </p>
 
       {/* Input Section */}
@@ -71,7 +129,27 @@ function AnalyzePage() {
                 <option value="cpp">C++</option>
               </select>
             </div>
+
+            {/* Auto analyze status indicator */}
+            <div className="flex items-center gap-2">
+              {countdown !== null && (
+                <span className="text-yellow-400 text-xs flex items-center gap-1">
+                  ⏳ Analyzing in {countdown}s
+                </span>
+              )}
+              {loading && (
+                <span className="text-blue-400 text-xs flex items-center gap-1">
+                  🔄 Analyzing...
+                </span>
+              )}
+              {!loading && !countdown && result && (
+                <span className="text-green-400 text-xs flex items-center gap-1">
+                  ✅ Analysis ready
+                </span>
+              )}
+            </div>
           </div>
+
           <Editor
             height="400px"
             language={language === "cpp" ? "cpp" : language}
@@ -87,7 +165,7 @@ function AnalyzePage() {
           />
         </div>
 
-        {/* Right — Quick Stats or Placeholder */}
+        {/* Right — How it works + Save button */}
         <div className="bg-slate-800 rounded-xl border border-slate-700 p-6 flex flex-col justify-between">
           <div>
             <h2 className="text-lg font-semibold text-white mb-4">
@@ -97,13 +175,13 @@ function AnalyzePage() {
               {[
                 {
                   icon: "🧬",
-                  title: "CodeBERT Analysis",
-                  desc: "Your code is converted to a 768-dim embedding vector using Microsoft's CodeBERT model",
+                  title: "Auto Analysis",
+                  desc: "Code is automatically analyzed 3 seconds after you stop typing — no need to click anything",
                 },
                 {
                   icon: "🎯",
                   title: "Approach Detection",
-                  desc: "Our trained classifier detects which algorithm pattern you used with confidence score",
+                  desc: "Our trained DL classifier detects which algorithm pattern you used with confidence score",
                 },
                 {
                   icon: "💡",
@@ -111,9 +189,9 @@ function AnalyzePage() {
                   desc: "Groq LLM generates detailed tips, complexity analysis and optimization suggestions",
                 },
                 {
-                  icon: "📊",
-                  title: "Score Tracking",
-                  desc: "Every submission updates your interview readiness score out of 100",
+                  icon: "💾",
+                  title: "Save to History",
+                  desc: "Click Save when you are happy with your solution to track your progress and update your score",
                 },
               ].map((item, i) => (
                 <div key={i} className="flex gap-3">
@@ -128,13 +206,29 @@ function AnalyzePage() {
               ))}
             </div>
           </div>
-          <button
-            onClick={handleAnalyze}
-            disabled={loading}
-            className="w-full mt-6 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-800 disabled:cursor-not-allowed text-white font-semibold py-3 rounded-xl transition-all text-lg"
-          >
-            {loading ? "⏳ Analyzing..." : "⚡ Analyze Code"}
-          </button>
+
+          {/* Save Button */}
+          <div className="mt-6 space-y-3">
+            {saved && (
+              <div className="bg-green-900/30 border border-green-500 text-green-400 px-4 py-2 rounded-xl text-sm text-center">
+                ✅ Saved to history and score updated!
+              </div>
+            )}
+            <button
+              onClick={handleSave}
+              disabled={!result || saving || saved}
+              className="w-full bg-green-600 hover:bg-green-700 disabled:bg-slate-700 disabled:cursor-not-allowed disabled:text-slate-500 text-white font-semibold py-3 rounded-xl transition-all text-lg"
+            >
+              {saving
+                ? "💾 Saving..."
+                : saved
+                  ? "✅ Saved!"
+                  : "💾 Save Submission"}
+            </button>
+            <p className="text-slate-500 text-xs text-center">
+              Analysis is automatic — Save only when ready to track progress
+            </p>
+          </div>
         </div>
       </div>
 
@@ -145,14 +239,35 @@ function AnalyzePage() {
         </div>
       )}
 
+      {/* Loading skeleton */}
+      {loading && !result && (
+        <div className="space-y-4">
+          {[1, 2, 3].map((i) => (
+            <div
+              key={i}
+              className="bg-slate-800 rounded-xl border border-slate-700 p-6 animate-pulse"
+            >
+              <div className="h-4 bg-slate-700 rounded w-1/4 mb-4"></div>
+              <div className="h-3 bg-slate-700 rounded w-3/4 mb-2"></div>
+              <div className="h-3 bg-slate-700 rounded w-1/2"></div>
+            </div>
+          ))}
+        </div>
+      )}
+
       {/* Results Section */}
       {result && (
         <div className="space-y-6">
           {/* Approach Detection */}
           <div className="bg-slate-800 rounded-xl border border-slate-700 p-6">
-            <h2 className="text-lg font-semibold text-white mb-4">
-              🎯 Approach Detection
-            </h2>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-white">
+                🎯 Approach Detection
+              </h2>
+              {loading && (
+                <span className="text-blue-400 text-xs">🔄 Updating...</span>
+              )}
+            </div>
             <div className="flex items-center gap-4 mb-4">
               <span className="text-3xl font-bold text-blue-400">
                 {result.approach_detection.predicted_approach}
@@ -164,8 +279,6 @@ function AnalyzePage() {
               </span>
               <span className="text-slate-400 text-sm">confidence</span>
             </div>
-
-            {/* All scores bar chart */}
             <div className="space-y-2">
               {Object.entries(result.approach_detection.all_scores)
                 .sort((a, b) => b[1] - a[1])
@@ -190,7 +303,6 @@ function AnalyzePage() {
 
           {/* Analysis Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Complexity */}
             <div className="bg-slate-800 rounded-xl border border-slate-700 p-6">
               <h2 className="text-lg font-semibold text-white mb-4">
                 ⏱️ Complexity Analysis
@@ -221,7 +333,6 @@ function AnalyzePage() {
               </div>
             </div>
 
-            {/* Good Practices */}
             <div className="bg-slate-800 rounded-xl border border-slate-700 p-6">
               <h2 className="text-lg font-semibold text-white mb-4">
                 ✅ Good Practices
@@ -240,7 +351,6 @@ function AnalyzePage() {
             </div>
           </div>
 
-          {/* Approach Explanation */}
           <div className="bg-slate-800 rounded-xl border border-slate-700 p-6">
             <h2 className="text-lg font-semibold text-white mb-3">
               🧠 Approach Explanation
@@ -250,7 +360,6 @@ function AnalyzePage() {
             </p>
           </div>
 
-          {/* Optimization Tips */}
           <div className="bg-slate-800 rounded-xl border border-slate-700 p-6">
             <h2 className="text-lg font-semibold text-white mb-4">
               🚀 Optimization Tips

@@ -32,6 +32,8 @@ function HistoryPage() {
       Greedy: "bg-yellow-900/40 text-yellow-400 border-yellow-800",
       "Binary Search": "bg-green-900/40 text-green-400 border-green-800",
       "Divide & Conquer": "bg-orange-900/40 text-orange-400 border-orange-800",
+      "Hash Map": "bg-cyan-900/40 text-cyan-400 border-cyan-800",
+      "Two Pointers": "bg-pink-900/40 text-pink-400 border-pink-800",
     };
     return colors[approach] || "bg-slate-700 text-slate-400 border-slate-600";
   };
