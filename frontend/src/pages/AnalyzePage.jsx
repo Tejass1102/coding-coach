@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import Editor from "@monaco-editor/react";
 import axios from "axios";
 
-const API = "http://127.0.0.1:8000/api";
+const API = "https://tejas1102-coding-coach-backend.hf.space/api";
 const DEBOUNCE_DELAY = 3000; // 3 seconds
 
 function AnalyzePage() {
@@ -20,20 +20,16 @@ function AnalyzePage() {
 
   // ── Auto analyze with debounce ──────────────────────
   useEffect(() => {
-    // Don't analyze placeholder text
     if (!code.trim() || code.trim() === "# Write your code here") {
       setCountdown(null);
       return;
     }
 
-    // Reset saved state when code changes
     setSaved(false);
 
-    // Clear existing timers
     if (debounceTimer.current) clearTimeout(debounceTimer.current);
     if (countdownTimer.current) clearInterval(countdownTimer.current);
 
-    // Start countdown display
     setCountdown(3);
     let count = 3;
     countdownTimer.current = setInterval(() => {
@@ -45,7 +41,6 @@ function AnalyzePage() {
       }
     }, 1000);
 
-    // Set debounce timer
     debounceTimer.current = setTimeout(() => {
       handleAutoAnalyze();
     }, DEBOUNCE_DELAY);
@@ -92,12 +87,6 @@ function AnalyzePage() {
     }
   };
 
-  const getConfidenceColor = (confidence) => {
-    if (confidence >= 80) return "text-green-400";
-    if (confidence >= 50) return "text-yellow-400";
-    return "text-red-400";
-  };
-
   return (
     <div className="max-w-6xl mx-auto px-6 py-8">
       <h1 className="text-3xl font-bold text-white mb-2">Analyze Your Code</h1>
@@ -130,7 +119,6 @@ function AnalyzePage() {
               </select>
             </div>
 
-            {/* Auto analyze status indicator */}
             <div className="flex items-center gap-2">
               {countdown !== null && (
                 <span className="text-yellow-400 text-xs flex items-center gap-1">
@@ -181,7 +169,7 @@ function AnalyzePage() {
                 {
                   icon: "🎯",
                   title: "Approach Detection",
-                  desc: "Our trained DL classifier detects which algorithm pattern you used with confidence score",
+                  desc: "Our trained DL classifier detects which algorithm pattern you used",
                 },
                 {
                   icon: "💡",
@@ -258,47 +246,19 @@ function AnalyzePage() {
       {/* Results Section */}
       {result && (
         <div className="space-y-6">
-          {/* Approach Detection */}
+          {/* ── Approach Detection — clean, name only ── */}
           <div className="bg-slate-800 rounded-xl border border-slate-700 p-6">
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center justify-between mb-3">
               <h2 className="text-lg font-semibold text-white">
-                🎯 Approach Detection
+                🎯 Approach Detected
               </h2>
               {loading && (
                 <span className="text-blue-400 text-xs">🔄 Updating...</span>
               )}
             </div>
-            <div className="flex items-center gap-4 mb-4">
-              <span className="text-3xl font-bold text-blue-400">
-                {result.approach_detection.predicted_approach}
-              </span>
-              <span
-                className={`text-2xl font-bold ${getConfidenceColor(result.approach_detection.confidence)}`}
-              >
-                {result.approach_detection.confidence}%
-              </span>
-              <span className="text-slate-400 text-sm">confidence</span>
-            </div>
-            <div className="space-y-2">
-              {Object.entries(result.approach_detection.all_scores)
-                .sort((a, b) => b[1] - a[1])
-                .map(([approach, score]) => (
-                  <div key={approach} className="flex items-center gap-3">
-                    <span className="text-slate-400 text-xs w-36">
-                      {approach}
-                    </span>
-                    <div className="flex-1 bg-slate-700 rounded-full h-2">
-                      <div
-                        className="bg-blue-500 h-2 rounded-full transition-all"
-                        style={{ width: `${score}%` }}
-                      />
-                    </div>
-                    <span className="text-slate-300 text-xs w-12 text-right">
-                      {score.toFixed(1)}%
-                    </span>
-                  </div>
-                ))}
-            </div>
+            <span className="text-3xl font-bold text-blue-400">
+              {result.approach_detection.predicted_approach}
+            </span>
           </div>
 
           {/* Analysis Grid */}

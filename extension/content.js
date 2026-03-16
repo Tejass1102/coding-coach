@@ -1,4 +1,4 @@
-const API = "http://127.0.0.1:8000/api";
+const API = "https://tejas1102-coding-coach-backend.hf.space/api";
 
 let sidebar = null;
 let currentResult = null;
@@ -38,7 +38,6 @@ function getProblemName() {
 
 // ── Get language ──────────────────────────────────────────
 function getLanguage() {
-  // Try all possible LeetCode language selector elements
   const selectors = [
     '[data-cy="lang-select"]',
     'button[id*="headlessui-listbox-button"]',
@@ -59,7 +58,6 @@ function getLanguage() {
     }
   }
 
-  // Fallback — check page URL or title for hints
   const pageText = document.body.innerText.toLowerCase();
   if (
     pageText.includes("public class solution") ||
@@ -67,7 +65,7 @@ function getLanguage() {
   )
     return "java";
 
-  return "python"; // default
+  return "python";
 }
 
 // ── Create sidebar ────────────────────────────────────────
@@ -108,7 +106,6 @@ function injectButton() {
     analyzeCode();
   });
 
-  // Try multiple LeetCode toolbar selectors
   const selectors = [
     ".relative.flex.gap-2",
     '[class*="RunCode"]',
@@ -126,7 +123,6 @@ function injectButton() {
     }
   }
 
-  // Fallback — fixed position button
   if (!inserted) {
     btn.style.cssText = `
       position: fixed;
@@ -150,16 +146,14 @@ async function analyzeCode() {
 
   const problemName = getProblemName();
   const language = getLanguage();
-  console.log("Coding Coach detected language:", language); // debug
+  console.log("Coding Coach detected language:", language);
 
-  // Open sidebar
   createSidebar();
   sidebar = document.getElementById("coding-coach-sidebar");
   sidebar.classList.add("open");
   isSaved = false;
   currentResult = null;
 
-  // Show loading
   document.getElementById("cc-content").innerHTML = `
     <div class="cc-loading">
       <span class="cc-loading-spinner">⚙️</span>
@@ -194,34 +188,12 @@ function renderResults(data, problemName, language, code) {
   const approach = data.approach_detection;
   const analysis = data.analysis;
 
-  const confidenceClass =
-    approach.confidence >= 80
-      ? "high"
-      : approach.confidence >= 50
-        ? "medium"
-        : "low";
-
   const difficultyText = analysis.difficulty_level.toLowerCase();
   const difficultyClass = difficultyText.includes("advanced")
     ? "advanced"
     : difficultyText.includes("intermediate")
       ? "intermediate"
       : "beginner";
-
-  const barsHTML = Object.entries(approach.all_scores)
-    .sort((a, b) => b[1] - a[1])
-    .map(
-      ([name, score]) => `
-      <div class="cc-bar-row">
-        <span class="cc-bar-label">${name}</span>
-        <div class="cc-bar-track">
-          <div class="cc-bar-fill" style="width: ${score}%"></div>
-        </div>
-        <span class="cc-bar-val">${score.toFixed(1)}%</span>
-      </div>
-    `,
-    )
-    .join("");
 
   const tipsHTML = analysis.optimization_tips
     .map(
@@ -251,12 +223,8 @@ function renderResults(data, problemName, language, code) {
     </div>
 
     <div class="cc-section">
-      <div class="cc-section-title">🎯 Approach Detection</div>
-      <div>
-        <span class="cc-approach">${approach.predicted_approach}</span>
-        <span class="cc-confidence ${confidenceClass}">${approach.confidence}%</span>
-      </div>
-      ${barsHTML}
+      <div class="cc-section-title">🎯 Approach Detected</div>
+      <span class="cc-approach">${approach.predicted_approach}</span>
     </div>
 
     <div class="cc-section">
@@ -299,7 +267,6 @@ function renderResults(data, problemName, language, code) {
     </div>
   `;
 
-  // Save button handler
   document.getElementById("cc-save-btn").addEventListener("click", async () => {
     const saveBtn = document.getElementById("cc-save-btn");
     saveBtn.disabled = true;
