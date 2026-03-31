@@ -27,14 +27,18 @@ Your LeetCode Code
   FastAPI Backend (localhost:8000)
         ↓
   ┌─────────────────────────────────┐
-  │  CodeBERT  →  768-dim Embedding │
+  │  Sentence Transformer           │
+  │  (all-MiniLM-L6-v2)             │
+  │  Code → 384-dim Embedding       │
   │       ↓                         │
+  │  Zero-Shot Similarity Match     │
+  │  (Cosine Sim against classes)   │
+  │       +                         │
   │  Rule-Based Detection           │
   │  (nested loops, HashMap, etc.)  │
-  │       ↓ (if rules unsure)       │
-  │  Custom Neural Network          │
-  │  Linear(768→256→64→8)           │
   └─────────────────────────────────┘
+        ↓
+  Hybrid Confidence Scoring
         ↓
   Groq LLM (llama-3.3-70b)
   → Human-readable feedback
@@ -50,10 +54,9 @@ Your LeetCode Code
 
 | Component | Details |
 |---|---|
-| **Embedding Model** | `microsoft/codebert-base` — pretrained transformer, outputs 768-dim vectors |
-| **Classifier** | Custom neural network: `Linear(768→256) → BatchNorm → ReLU → Dropout(0.2) → Linear(256→64) → ReLU → Linear(64→8)` |
-| **Training Data** | 96 hand-curated Java LeetCode solutions across 8 classes |
-| **Hybrid Detection** | Rule-based pattern matching + ML classifier (Neurosymbolic approach) |
+| **Embedding Model** | `all-MiniLM-L6-v2` — highly efficient, CPU-friendly Sentence Transformer (384-dim vectors) |
+| **Detection Method** | Zero-Shot Semantic Similarity mapped to canonical approach embeddings |
+| **Hybrid Rulesengine** | Combined ML similarity matching + Symbolic rule-based heuristics (Regex, syntax parsing) |
 
 ### 8 Algorithm Classes
 
@@ -62,9 +65,9 @@ Your LeetCode Code
 | 0 | Brute Force |
 | 1 | Sliding Window |
 | 2 | Dynamic Programming |
-| 3 | Greedy |
-| 4 | Binary Search |
-| 5 | Divide & Conquer |
+| 3 | Backtracking |
+| 4 | Modified Binary Search |
+| 5 | Prefix Sum |
 | 6 | Hash Map |
 | 7 | Two Pointers |
 
@@ -74,9 +77,9 @@ Your LeetCode Code
 |---|---|
 | Chrome Extension | Manifest V3, Vanilla JS |
 | Backend | Python, FastAPI |
-| DL Framework | PyTorch, HuggingFace Transformers |
-| Embedding Model | CodeBERT (microsoft/codebert-base) |
-| LLM Feedback | Groq API (llama-3.3-70b-versatile) |
+| DL Framework | Sentence-Transformers (`sentence-transformers`), NumPy |
+| Embedding Model | MiniLM (`all-MiniLM-L6-v2`) |
+| LLM Feedback | Groq API (`llama-3.3-70b-versatile`) |
 | Database | Supabase (PostgreSQL) |
 
 ---
@@ -88,19 +91,13 @@ coding-coach/
 ├── backend/
 │   ├── main.py
 │   ├── .env
-│   ├── models/
-│   │   └── approach_classifier.pt
 │   ├── routes/
 │   │   └── analyze.py
-│   ├── services/
-│   │   ├── codebert_service.py
-│   │   ├── classifier_service.py
-│   │   ├── gemini_service.py        ← uses Groq API
-│   │   ├── supabase_service.py
-│   │   └── score_service.py
-│   └── notebooks/
-│       ├── training_data.py
-│       └── train_classifier.py
+│   └── services/
+│       ├── dl_analyzer.py           ← Handles MiniLM embeddings & hybrid logic
+│       ├── gemini_service.py        ← Interacts with Groq API
+│       ├── supabase_service.py      ← Database interactions
+│       └── score_service.py         ← Interactor readiness calculations
 └── extension/
     ├── manifest.json
     ├── content.js
@@ -126,7 +123,7 @@ python -m venv venv
 venv\Scripts\activate        # Windows
 source venv/bin/activate     # Mac/Linux
 
-pip install fastapi uvicorn torch transformers supabase groq
+pip install fastapi uvicorn sentence-transformers numpy supabase groq
 ```
 
 ### 3. Configure environment variables
@@ -142,14 +139,7 @@ GROQ_API_KEY=your_groq_api_key
 > - Groq API: [console.groq.com](https://console.groq.com) — free, no card required
 > - Supabase: [supabase.com](https://supabase.com) — free tier
 
-### 4. Train the classifier (or use pretrained)
-
-```bash
-cd backend/notebooks
-python train_classifier.py
-```
-
-### 5. Start the backend server
+### 4. Start the backend server
 
 ```bash
 cd backend
@@ -158,7 +148,7 @@ uvicorn main:app --reload
 
 Server runs at `http://127.0.0.1:8000`
 
-### 6. Load the Chrome Extension
+### 5. Load the Chrome Extension
 
 1. Open Chrome and go to `chrome://extensions`
 2. Enable **Developer mode** (top right toggle)
@@ -199,13 +189,11 @@ optimization_tips (json), good_practices (json), difficulty_level
 
 ## 🎓 College Project Notes
 
-This project was built as a Deep Learning course project. Key DL concepts demonstrated:
+This project was built as a Deep Learning application. Key logical and ML concepts demonstrated:
 
-- **Transfer Learning** — using pretrained CodeBERT embeddings instead of training from scratch
-- **Neural Network Classification** — custom MLP on top of embeddings
-- **Neurosymbolic AI** — combining neural network predictions with symbolic rule-based detection for robustness
-- **Class Imbalance Handling** — weighted CrossEntropyLoss based on class distribution
-- **Training Regularization** — BatchNorm, Dropout, ReduceLROnPlateau scheduler
+- **Zero-Shot Semantic Similarity** — utilizing a generalized sentence transformer (`MiniLM-L6-v2`) to compare natural language algorithmic descriptions with embedded user code, removing the need for vast datasets to train custom code-classifiers.
+- **Efficient ML Deployments** — selecting a lightweight 22M parameter model allows deep learning inference to take place synchronously and efficiently entirely on a user's CPU.
+- **Neurosymbolic AI Architecture** — elegantly balancing neural networks (probabilistic similarity matching) with robust symbolic software architectures (syntax and regex heuristics) for comprehensive coverage and reliability.
 
 ---
 
