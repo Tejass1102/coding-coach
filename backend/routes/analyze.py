@@ -1,10 +1,10 @@
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
-from services.codebert_service import get_code_embedding, get_embedding_summary
-from services.classifier_service import predict_approach
-from services.gemini_service import analyze_with_gemini
-from services.supabase_service import save_submission, save_analysis
-from services.score_service import calculate_readiness_score
+from backend.services.dl_analyzer import get_code_embedding, get_embedding_summary, predict_approach
+from backend.services.gemini_service import analyze_with_gemini
+from backend.services.supabase_service import save_submission, save_analysis
+from backend.services.score_service import calculate_readiness_score
+from backend.services.gemini_service import get_verdict_tips
 
 router = APIRouter()
 
@@ -62,7 +62,7 @@ def analyze_code(input: CodeInput):
 
 @router.get("/history")
 def get_history():
-    from services.supabase_service import get_all_submissions
+    from backend.services.supabase_service import get_all_submissions
     submissions = get_all_submissions()
     return {
         "total": len(submissions),
@@ -72,7 +72,7 @@ def get_history():
 
 @router.get("/submission/{submission_id}")
 def get_submission(submission_id: str):
-    from services.supabase_service import get_submission_by_id
+    from backend.services.supabase_service import get_submission_by_id
     submission = get_submission_by_id(submission_id)
     if not submission:
         raise HTTPException(status_code=404, detail="Submission not found")
@@ -161,3 +161,24 @@ def save_submission_endpoint(input: CodeInput):
         "saved": True,
         "message": "✅ Analysis saved successfully"
     }
+
+# ── ADD THIS at the bottom of routes/analyze.py ──
+
+class VerdictRequest(BaseModel):
+    code: str
+    language: str
+    problem_name: str
+    verdict: str
+
+@router.post("/analyze-verdict")
+async def analyze_verdict(request: VerdictRequest):
+    try:
+        result = await get_verdict_tips(
+            request.code,
+            request.language,
+            request.problem_name,
+            request.verdict
+        )
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

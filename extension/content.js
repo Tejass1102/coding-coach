@@ -1,8 +1,9 @@
-const API = "https://tejas1102-coding-coach-backend.hf.space/api";
+const API = "http://127.0.0.1:8000/api";
 
 let sidebar = null;
 let currentResult = null;
 let isSaved = false;
+let lastVerdict = null;
 
 // ── Wait for LeetCode editor to load ─────────────────────
 function waitForEditor(callback, attempts = 0) {
@@ -153,13 +154,16 @@ async function analyzeCode() {
   sidebar.classList.add("open");
   isSaved = false;
   currentResult = null;
+  lastVerdict = null;
 
   document.getElementById("cc-content").innerHTML = `
-    <div class="cc-loading">
-      <span class="cc-loading-spinner">⚙️</span>
-      <div style="color: #94a3b8; margin-bottom: 4px;">Analyzing your code...</div>
-      <div style="color: #475569; font-size: 11px;">${problemName}</div>
+  <div class="cc-loading">
+    <span class="cc-loading-spinner">⚙️</span>
+    <div style="color: #94a3b8;">Analyzing your code...</div>
+    <div style="color: #475569; font-size: 11px;">
+      First load may take ~30 seconds to wake up server
     </div>
+  </div>
   `;
 
   try {
@@ -187,6 +191,7 @@ async function analyzeCode() {
 function renderResults(data, problemName, language, code) {
   const approach = data.approach_detection;
   const analysis = data.analysis;
+  const displayedApproach = analysis.final_approach || approach.predicted_approach;
 
   const difficultyText = analysis.difficulty_level.toLowerCase();
   const difficultyClass = difficultyText.includes("advanced")
@@ -220,11 +225,25 @@ function renderResults(data, problemName, language, code) {
   document.getElementById("cc-content").innerHTML = `
     <div id="cc-save-area">
       <button class="cc-save-btn" id="cc-save-btn">💾 Save to History</button>
+      <button id="cc-check-btn" style="
+        width:100%;
+        margin-top:8px;
+        background: #1e3a5f;
+        border: 1px solid #3b82f6;
+        color: #60a5fa;
+        font-size:13px;
+        font-weight:600;
+        padding:8px;
+        border-radius:10px;
+        cursor:pointer;
+      ">🔍 Check Result</button>
     </div>
+
+    <div id="cc-verdict-area"></div>
 
     <div class="cc-section">
       <div class="cc-section-title">🎯 Approach Detected</div>
-      <span class="cc-approach">${approach.predicted_approach}</span>
+      <span class="cc-approach">${displayedApproach}</span>
     </div>
 
     <div class="cc-section">
@@ -290,10 +309,235 @@ function renderResults(data, problemName, language, code) {
       saveBtn.textContent = "💾 Save to History";
       alert("Failed to save. Make sure backend is running.");
     }
+
+    document.getElementById("cc-check-btn").addEventListener("click", () => {
+      const resultSelectors = [
+        '[data-e2e-locator="submission-result"]',
+        '[data-e2e-locator="console-result"]',
+        ".text-green-s",
+        ".text-red-s",
+        '[class*="result__"]',
+      ];
+      let found = false;
+      for (const sel of resultSelectors) {
+        const el = document.querySelector(sel);
+        if (el && el.textContent.trim()) {
+          const verdict = classifyVerdict(el.textContent.trim());
+          if (verdict) {
+            renderVerdict(verdict);
+            found = true;
+            break;
+          }
+        }
+      }
+      if (!found) {
+        const verdictArea = document.getElementById("cc-verdict-area");
+        if (verdictArea)
+          verdictArea.innerHTML = `
+          <div style="color:#94a3b8; font-size:12px; text-align:center; padding:10px;">
+            No result found yet. Please Run or Submit your code first.
+          </div>`;
+      }
+    });
+  });
+}
+
+// ── Classify verdict text ─────────────────────────────────
+function classifyVerdict(text) {
+  const t = text.toLowerCase();
+  if (t.includes("accepted")) return "accepted";
+  if (t.includes("wrong answer")) return "wrong_answer";
+  if (t.includes("time limit")) return "time_limit_exceeded";
+  if (t.includes("memory limit")) return "memory_limit_exceeded";
+  if (t.includes("runtime error")) return "runtime_error";
+  if (t.includes("compilation error")) return "compilation_error";
+  if (t.includes("output match")) return "accepted";
+  if (t.includes("expected")) return "wrong_answer";
+  return null;
+}
+
+// ── Get verdict config ────────────────────────────────────
+function getVerdictConfig(verdict) {
+  const config = {
+    accepted: {
+      color: "#22c55e",
+      bg: "rgba(34,197,94,0.1)",
+      border: "rgba(34,197,94,0.3)",
+      icon: "✅",
+      label: "Accepted",
+      showTips: false,
+    },
+    wrong_answer: {
+      color: "#ef4444",
+      bg: "rgba(239,68,68,0.1)",
+      border: "rgba(239,68,68,0.3)",
+      icon: "❌",
+      label: "Wrong Answer",
+      showTips: true,
+    },
+    time_limit_exceeded: {
+      color: "#f97316",
+      bg: "rgba(249,115,22,0.1)",
+      border: "rgba(249,115,22,0.3)",
+      icon: "⏱️",
+      label: "Time Limit Exceeded",
+      showTips: true,
+    },
+    memory_limit_exceeded: {
+      color: "#a855f7",
+      bg: "rgba(168,85,247,0.1)",
+      border: "rgba(168,85,247,0.3)",
+      icon: "💾",
+      label: "Memory Limit Exceeded",
+      showTips: true,
+    },
+    runtime_error: {
+      color: "#f59e0b",
+      bg: "rgba(245,158,11,0.1)",
+      border: "rgba(245,158,11,0.3)",
+      icon: "💥",
+      label: "Runtime Error",
+      showTips: true,
+    },
+    compilation_error: {
+      color: "#6366f1",
+      bg: "rgba(99,102,241,0.1)",
+      border: "rgba(99,102,241,0.3)",
+      icon: "🔧",
+      label: "Compilation Error",
+      showTips: true,
+    },
+  };
+  return config[verdict] || config["wrong_answer"];
+}
+
+// ── Render verdict in sidebar ─────────────────────────────
+async function renderVerdict(verdict) {
+  const verdictArea = document.getElementById("cc-verdict-area");
+  if (!verdictArea) return;
+
+  const c = getVerdictConfig(verdict);
+  const code = getCodeFromEditor();
+  const language = getLanguage();
+  const problemName = getProblemName();
+
+  verdictArea.innerHTML = `
+    <div style="
+      background: ${c.bg};
+      border: 2px solid ${c.border};
+      border-radius: 12px;
+      padding: 18px;
+      margin-bottom: 14px;
+      text-align: center;
+    ">
+      <div style="font-size:32px; margin-bottom:6px;">${c.icon}</div>
+      <div style="font-size:22px; font-weight:800; color:${c.color}; margin-bottom:4px;">
+        ${c.label}
+      </div>
+      <div style="color:#94a3b8; font-size:12px; margin-bottom: ${c.showTips ? "14px" : "0"};">
+        ${c.showTips ? "Your solution failed. See tips below to fix it." : "Your solution passed all test cases! 🎉"}
+      </div>
+      ${
+        c.showTips
+          ? `<div style="text-align:left; border-top: 1px solid ${c.border}; padding-top:12px;">
+               <div class="cc-section-title" style="margin-bottom:8px;">💡 Tips to Fix</div>
+               <div id="cc-fix-tips">
+                 <div style="color:#94a3b8; font-size:12px; padding:6px 0;">⏳ Getting tips...</div>
+               </div>
+             </div>`
+          : ""
+      }
+    </div>
+  `;
+
+  if (sidebar) sidebar.classList.add("open");
+
+  // Scroll verdict into view
+  verdictArea.scrollIntoView({ behavior: "smooth", block: "start" });
+
+  if (c.showTips) {
+    try {
+      const res = await fetch(`${API}/analyze-verdict`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          code,
+          language,
+          problem_name: problemName,
+          verdict,
+        }),
+      });
+      const data = await res.json();
+      const tipsEl = document.getElementById("cc-fix-tips");
+      if (tipsEl && data.verdict_tips) {
+        tipsEl.innerHTML = data.verdict_tips
+          .map(
+            (tip, i) => `
+            <div class="cc-tip">
+              <span class="cc-tip-num">${i + 1}.</span>
+              <span class="cc-tip-text">${tip}</span>
+            </div>`,
+          )
+          .join("");
+      }
+    } catch (err) {
+      const tipsEl = document.getElementById("cc-fix-tips");
+      if (tipsEl)
+        tipsEl.innerHTML = `<p style="color:#ef4444; font-size:12px;">Could not fetch tips.</p>`;
+    }
+  }
+}
+
+// ── Watch for Run / Submit result ─────────────────────────
+function watchForResult() {
+  let lastText = "";
+
+  const observer = new MutationObserver(() => {
+    const resultSelectors = [
+      '[data-e2e-locator="submission-result"]',
+      '[data-e2e-locator="console-result"]',
+      ".text-green-s",
+      ".text-red-s",
+      '[class*="result__"]',
+      '[class*="ResultBar"]',
+      '[class*="status-"]',
+    ];
+
+    for (const sel of resultSelectors) {
+      const el = document.querySelector(sel);
+      if (el) {
+        const text = el.textContent.trim();
+        if (text && text !== lastText) {
+          const verdict = classifyVerdict(text);
+          if (verdict && verdict !== lastVerdict) {
+            lastText = text;
+            lastVerdict = verdict;
+            console.log("Coding Coach verdict:", verdict);
+
+            if (document.getElementById("cc-verdict-area")) {
+              // Sidebar already open — just update verdict area
+              renderVerdict(verdict);
+            } else {
+              // Sidebar not open — auto analyze first then show verdict
+              analyzeCode().then(() => {
+                setTimeout(() => renderVerdict(verdict), 500);
+              });
+            }
+          }
+        }
+      }
+    }
+  });
+
+  observer.observe(document.body, {
+    childList: true,
+    subtree: true,
+    characterData: true,
   });
 }
 
 // ── Init ──────────────────────────────────────────────────
 waitForEditor(() => {
   setTimeout(injectButton, 2000);
+  watchForResult();
 });

@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import Editor from "@monaco-editor/react";
 import axios from "axios";
 
-const API = "https://tejas1102-coding-coach-backend.hf.space/api";
+const API = "http://127.0.0.1:8000/api";
 const DEBOUNCE_DELAY = 3000; // 3 seconds
 
 function AnalyzePage() {
@@ -257,7 +257,7 @@ function AnalyzePage() {
               )}
             </div>
             <span className="text-3xl font-bold text-blue-400">
-              {result.approach_detection.predicted_approach}
+              {result.analysis.final_approach || result.approach_detection.predicted_approach}
             </span>
           </div>
 

@@ -24,7 +24,7 @@ def save_analysis(
     submission_id: str,
     approach_detection: dict,
     analysis: dict,
-    embedding_summary: dict
+    embedding_summary: str
 ) -> str:
     result = supabase.table("analyses").insert({
         "submission_id": submission_id,
@@ -36,9 +36,7 @@ def save_analysis(
         "space_complexity": analysis["space_complexity"],
         "optimization_tips": analysis["optimization_tips"],
         "good_practices": analysis["good_practices"],
-        "difficulty_level": analysis["difficulty_level"],
-        "embedding_mean": embedding_summary["mean"],
-        "embedding_std": embedding_summary["std"]
+        "difficulty_level": analysis["difficulty_level"]
     }).execute()
     return result.data[0]["id"]
 
