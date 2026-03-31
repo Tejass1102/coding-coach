@@ -5,3 +5,6 @@ __pycache__/
 .DS_Store
 *.pt
 backend/notebooks/vendor/
+YOU_ARE_READY.md
+test_api.py
+verify_setup.py
