@@ -264,13 +264,12 @@ function renderResults(data, problemName, language, code) {
       <div class="cc-complexity-item">
         <div class="cc-complexity-label">Difficulty</div>
         <span class="cc-difficulty ${difficultyClass}">
-          ${
-            difficultyText.includes("advanced")
-              ? "Advanced"
-              : difficultyText.includes("intermediate")
-                ? "Intermediate"
-                : "Beginner"
-          }
+          ${difficultyText.includes("advanced")
+      ? "Advanced"
+      : difficultyText.includes("intermediate")
+        ? "Intermediate"
+        : "Beginner"
+    }
         </span>
       </div>
     </div>
@@ -286,6 +285,7 @@ function renderResults(data, problemName, language, code) {
     </div>
   `;
 
+  // ── Save button listener ──────────────────────────────────
   document.getElementById("cc-save-btn").addEventListener("click", async () => {
     const saveBtn = document.getElementById("cc-save-btn");
     saveBtn.disabled = true;
@@ -309,37 +309,73 @@ function renderResults(data, problemName, language, code) {
       saveBtn.textContent = "💾 Save to History";
       alert("Failed to save. Make sure backend is running.");
     }
-
-    document.getElementById("cc-check-btn").addEventListener("click", () => {
-      const resultSelectors = [
-        '[data-e2e-locator="submission-result"]',
-        '[data-e2e-locator="console-result"]',
-        ".text-green-s",
-        ".text-red-s",
-        '[class*="result__"]',
-      ];
-      let found = false;
-      for (const sel of resultSelectors) {
-        const el = document.querySelector(sel);
-        if (el && el.textContent.trim()) {
-          const verdict = classifyVerdict(el.textContent.trim());
-          if (verdict) {
-            renderVerdict(verdict);
-            found = true;
-            break;
-          }
-        }
-      }
-      if (!found) {
-        const verdictArea = document.getElementById("cc-verdict-area");
-        if (verdictArea)
-          verdictArea.innerHTML = `
-          <div style="color:#94a3b8; font-size:12px; text-align:center; padding:10px;">
-            No result found yet. Please Run or Submit your code first.
-          </div>`;
-      }
-    });
   });
+
+  // ── Check Result button listener (independent of save) ────
+  document.getElementById("cc-check-btn").addEventListener("click", () => {
+    const verdict = scanPageForVerdict();
+    if (verdict) {
+      renderVerdict(verdict);
+    } else {
+      const verdictArea = document.getElementById("cc-verdict-area");
+      if (verdictArea)
+        verdictArea.innerHTML = `
+        <div style="color:#94a3b8; font-size:12px; text-align:center; padding:10px;">
+          No result found yet. Please Run or Submit your code first.
+        </div>`;
+    }
+  });
+
+  // Auto-check the result on screen immediately after rendering the sidebar
+  // so verdict appears right away without requiring a manual button click
+  setTimeout(() => {
+    const checkBtn = document.getElementById("cc-check-btn");
+    if (checkBtn) checkBtn.click();
+  }, 150);
+}
+
+// ── Broad verdict scan across entire result panel ─────────
+function scanPageForVerdict() {
+  // Try specific selectors first (fast path)
+  const specificSelectors = [
+    '[data-e2e-locator="submission-result"]',
+    '[data-e2e-locator="console-result"]',
+    ".text-green-s",
+    ".text-red-s",
+    '[class*="result__"]',
+    '[class*="ResultBar"]',
+    '[class*="status-"]',
+  ];
+  for (const sel of specificSelectors) {
+    const el = document.querySelector(sel);
+    if (el && el.textContent.trim()) {
+      const verdict = classifyVerdict(el.textContent.trim());
+      if (verdict) return verdict;
+    }
+  }
+
+  // Broad fallback: scan all text in the result/console panel
+  // Look for the parent container that holds the test result output
+  const panelSelectors = [
+    '[class*="console"]',
+    '[class*="result"]',
+    '[class*="testcase"]',
+    '[class*="TestResult"]',
+    '[class*="submission"]',
+  ];
+  for (const pSel of panelSelectors) {
+    const panels = document.querySelectorAll(pSel);
+    for (const panel of panels) {
+      // Skip the coding coach sidebar itself
+      if (panel.closest("#coding-coach-sidebar")) continue;
+      const text = panel.textContent.trim();
+      if (text.length > 3 && text.length < 500) {
+        const verdict = classifyVerdict(text);
+        if (verdict) return verdict;
+      }
+    }
+  }
+  return null;
 }
 
 // ── Classify verdict text ─────────────────────────────────
@@ -351,6 +387,7 @@ function classifyVerdict(text) {
   if (t.includes("memory limit")) return "memory_limit_exceeded";
   if (t.includes("runtime error")) return "runtime_error";
   if (t.includes("compilation error")) return "compilation_error";
+  if (t.includes("compile error")) return "compilation_error";
   if (t.includes("output match")) return "accepted";
   if (t.includes("expected")) return "wrong_answer";
   return null;
@@ -437,16 +474,15 @@ async function renderVerdict(verdict) {
       <div style="color:#94a3b8; font-size:12px; margin-bottom: ${c.showTips ? "14px" : "0"};">
         ${c.showTips ? "Your solution failed. See tips below to fix it." : "Your solution passed all test cases! 🎉"}
       </div>
-      ${
-        c.showTips
-          ? `<div style="text-align:left; border-top: 1px solid ${c.border}; padding-top:12px;">
+      ${c.showTips
+      ? `<div style="text-align:left; border-top: 1px solid ${c.border}; padding-top:12px;">
                <div class="cc-section-title" style="margin-bottom:8px;">💡 Tips to Fix</div>
                <div id="cc-fix-tips">
                  <div style="color:#94a3b8; font-size:12px; padding:6px 0;">⏳ Getting tips...</div>
                </div>
              </div>`
-          : ""
-      }
+      : ""
+    }
     </div>
   `;
 
@@ -492,39 +528,37 @@ async function renderVerdict(verdict) {
 function watchForResult() {
   let lastText = "";
 
+  // Reset text tracking state if the user clicks any run or submit button,
+  // allowing the exact same outcome ("Accepted") to be picked up again
+  // and reopening the sidebar.
+  document.body.addEventListener("click", (e) => {
+    const btn = e.target.closest("button");
+    if (btn) {
+      const text = btn.textContent.toLowerCase();
+      const e2e = btn.getAttribute("data-e2e-locator") || "";
+      if (text.includes("run") || text.includes("submit") || e2e.includes("run") || e2e.includes("submit")) {
+        lastText = "";
+      }
+    }
+  });
+
   const observer = new MutationObserver(() => {
-    const resultSelectors = [
-      '[data-e2e-locator="submission-result"]',
-      '[data-e2e-locator="console-result"]',
-      ".text-green-s",
-      ".text-red-s",
-      '[class*="result__"]',
-      '[class*="ResultBar"]',
-      '[class*="status-"]',
-    ];
+    const verdict = scanPageForVerdict();
+    if (verdict) {
+      // Build a fingerprint from current page text to avoid re-triggering on same state
+      const pageSnippet = document.body.innerText.slice(0, 1000);
+      if (pageSnippet === lastText) return;
+      lastText = pageSnippet;
 
-    for (const sel of resultSelectors) {
-      const el = document.querySelector(sel);
-      if (el) {
-        const text = el.textContent.trim();
-        if (text && text !== lastText) {
-          const verdict = classifyVerdict(text);
-          if (verdict && verdict !== lastVerdict) {
-            lastText = text;
-            lastVerdict = verdict;
-            console.log("Coding Coach verdict:", verdict);
+      console.log("Coding Coach verdict detected:", verdict);
 
-            if (document.getElementById("cc-verdict-area")) {
-              // Sidebar already open — just update verdict area
-              renderVerdict(verdict);
-            } else {
-              // Sidebar not open — auto analyze first then show verdict
-              analyzeCode().then(() => {
-                setTimeout(() => renderVerdict(verdict), 500);
-              });
-            }
-          }
-        }
+      // Re-open sidebar and render
+      if (document.getElementById("cc-verdict-area")) {
+        renderVerdict(verdict);
+      } else {
+        analyzeCode().then(() => {
+          setTimeout(() => renderVerdict(verdict), 500);
+        });
       }
     }
   });
