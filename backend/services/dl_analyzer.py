@@ -188,48 +188,23 @@ def predict_approach(code: str) -> Dict:
     ml_max = ml_scores.max()
     pattern_max = pattern_scores_array.max()
     
-    # DEBUG LOGGING
-    print("\n" + "="*70, file=sys.stderr)
-    print("HYBRID APPROACH DETECTION DEBUG", file=sys.stderr)
-    print("="*70, file=sys.stderr)
-    print("\nML SCORES:", file=sys.stderr)
-    for key, score in zip(_APPROACH_KEYS, ml_scores):
-        print(f"  {key:25s}: {score:6.2f}", file=sys.stderr)
-    
-    print("\nPATTERN SCORES:", file=sys.stderr)
-    for key, score in zip(_APPROACH_KEYS, pattern_scores_array):
-        print(f"  {key:25s}: {score:6.2f}", file=sys.stderr)
-    
-    print(f"\nML Max: {ml_max:.2f}, Pattern Max: {pattern_max:.2f}", file=sys.stderr)
-    
     # If patterns are very strong (>70), they likely indicate the true approach
     if pattern_max > 70:
-        print("→ Using PATTERN DETECTION (pattern_max > 70): 0.4×ML + 0.6×pattern", file=sys.stderr)
         combined_scores = 0.4 * ml_scores + 0.6 * pattern_scores_array
     # If ML is very confident, weight it heavily
     elif ml_max > 75:
-        print("→ Using ML CONFIDENT (ml_max > 75): 0.85×ML + 0.15×pattern", file=sys.stderr)
         combined_scores = 0.85 * ml_scores + 0.15 * pattern_scores_array
     # If patterns are detected, give them weight
     elif pattern_max > 50:
-        print("→ Using BALANCED MODE (50 < pattern_max ≤ 70): 0.6×ML + 0.4×pattern", file=sys.stderr)
         combined_scores = 0.6 * ml_scores + 0.4 * pattern_scores_array
     # Default: mostly ML
     else:
-        print("→ Using DEFAULT MODE: 0.75×ML + 0.25×pattern", file=sys.stderr)
         combined_scores = 0.75 * ml_scores + 0.25 * pattern_scores_array
-
-    print("\nCOMBINED SCORES:", file=sys.stderr)
-    for key, score in zip(_APPROACH_KEYS, combined_scores):
-        print(f"  {key:25s}: {score:6.2f}", file=sys.stderr)
 
     # Step 4: Find best approach
     best_idx = int(combined_scores.argmax())
     best_key = _APPROACH_KEYS[best_idx]
     best_score = float(combined_scores[best_idx])
-    
-    print(f"\n✓ PREDICTED: {best_key.replace('_', ' ').title()} (confidence: {best_score:.2f})", file=sys.stderr)
-    print("="*70 + "\n", file=sys.stderr)
 
     # Build all_scores dict with human-friendly names
     all_scores: Dict[str, float] = {}

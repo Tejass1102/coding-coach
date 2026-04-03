@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import numpy as np
 import re
-from backend.services.codebert_service import get_code_embedding
+from services.codebert_service import get_code_embedding
 
 class ApproachClassifier(nn.Module):
     def __init__(self, input_dim=768, num_classes=8):

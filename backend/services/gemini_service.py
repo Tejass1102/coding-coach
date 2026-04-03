@@ -186,7 +186,7 @@ Return ONLY a JSON object in this exact format with no extra text:
 }}
 """
 
-    response = groq_client.chat.completions.create(
+    response = client.chat.completions.create(
         model="llama-3.3-70b-versatile",
         messages=[{"role": "user", "content": prompt}],
         max_tokens=500,

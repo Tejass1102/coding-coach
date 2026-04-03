@@ -1,10 +1,10 @@
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
-from backend.services.dl_analyzer import get_code_embedding, get_embedding_summary, predict_approach
-from backend.services.gemini_service import analyze_with_gemini
-from backend.services.supabase_service import save_submission, save_analysis
-from backend.services.score_service import calculate_readiness_score
-from backend.services.gemini_service import get_verdict_tips
+from services.dl_analyzer import get_code_embedding, get_embedding_summary, predict_approach
+from services.gemini_service import analyze_with_gemini
+from services.supabase_service import save_submission, save_analysis
+from services.score_service import calculate_readiness_score
+from services.gemini_service import get_verdict_tips
 
 router = APIRouter()
 

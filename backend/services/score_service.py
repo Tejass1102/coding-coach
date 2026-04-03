@@ -1,4 +1,4 @@
-from backend.services.supabase_service import get_all_submissions
+from services.supabase_service import get_all_submissions
 from datetime import datetime, timezone
 
 
