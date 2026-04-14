@@ -1,6 +1,7 @@
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
-from services.dl_analyzer import get_code_embedding, get_embedding_summary, predict_approach
+from services.dl_analyzer import get_code_embedding, get_embedding_summary
+from services.classifier_service import predict_approach
 from services.gemini_service import analyze_with_gemini
 from services.supabase_service import save_submission, save_analysis
 from services.score_service import calculate_readiness_score

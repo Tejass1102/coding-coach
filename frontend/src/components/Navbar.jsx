@@ -4,9 +4,7 @@ function Navbar() {
   const location = useLocation();
 
   const navItems = [
-    { path: "/", label: "🧠 Analyze" },
     { path: "/history", label: "📜 History" },
-    { path: "/score", label: "🏆 Score" },
   ];
 
   return (

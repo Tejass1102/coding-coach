@@ -12,6 +12,9 @@ print("✅ Supabase connected")
 
 
 def save_submission(problem_name: str, language: str, code: str) -> str:
+    # Delete any previous submission for the same problem so only the latest is kept
+    supabase.table("submissions").delete().eq("problem_name", problem_name).execute()
+
     result = supabase.table("submissions").insert({
         "problem_name": problem_name,
         "language": language,

@@ -2,10 +2,10 @@ import torch
 import torch.nn as nn
 import numpy as np
 import re
-from services.codebert_service import get_code_embedding
+from services.dl_analyzer import get_code_embedding
 
 class ApproachClassifier(nn.Module):
-    def __init__(self, input_dim=768, num_classes=8):
+    def __init__(self, input_dim=384, num_classes=8):
         super(ApproachClassifier, self).__init__()
         self.network = nn.Sequential(
             nn.Linear(input_dim, 256),
@@ -99,15 +99,16 @@ def predict_approach(code: str) -> dict:
         probabilities = torch.softmax(outputs, dim=1).squeeze().numpy()
         predicted_idx = int(np.argmax(probabilities))
 
+    # Build all_scores with clean Title Case keys so UI can map colors
     all_scores = {
-        LABEL_NAMES[i]: round(float(probabilities[i]) * 100, 2)
+        LABEL_NAMES[i].replace("_", " ").title(): round(float(probabilities[i]) * 100, 2)
         for i in range(len(LABEL_NAMES))
     }
 
     if rule_result:
         label_name, confidence = rule_result
         # Boost the rule-detected class in scores for display
-        all_scores[label_name] = max(all_scores[label_name], confidence)
+        all_scores[label_name] = max(all_scores.get(label_name, 0), confidence)
         return {
             "predicted_approach": label_name,
             "confidence": confidence,
@@ -116,8 +117,9 @@ def predict_approach(code: str) -> dict:
         }
 
     # Fall back to ML model
+    best_label = LABEL_NAMES[predicted_idx].replace("_", " ").title()
     return {
-        "predicted_approach": LABEL_NAMES[predicted_idx],
+        "predicted_approach": best_label,
         "confidence": round(float(probabilities[predicted_idx]) * 100, 2),
         "all_scores": all_scores,
         "detection_method": "ml-model"
