@@ -63,7 +63,7 @@ def analyze_code(input: CodeInput):
 
 @router.get("/history")
 def get_history():
-    from backend.services.supabase_service import get_all_submissions
+    from services.supabase_service import get_all_submissions
     submissions = get_all_submissions()
     return {
         "total": len(submissions),
@@ -73,7 +73,7 @@ def get_history():
 
 @router.get("/submission/{submission_id}")
 def get_submission(submission_id: str):
-    from backend.services.supabase_service import get_submission_by_id
+    from services.supabase_service import get_submission_by_id
     submission = get_submission_by_id(submission_id)
     if not submission:
         raise HTTPException(status_code=404, detail="Submission not found")
