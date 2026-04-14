@@ -13,7 +13,64 @@ print("✅ Groq configured")
 DL_CONFIDENCE_THRESHOLD = float(os.getenv("DL_CONFIDENCE_THRESHOLD", "60"))
 
 
-def analyze_with_gemini(code: str, approach: str, confidence: float, all_scores: dict) -> dict:
+def detect_language_from_code(code: str) -> str:
+    """Reliably detect language from raw code content, ignoring what the frontend reports."""
+    c = code.lower()
+    # Java — check before JS because both use 'class'
+    if any([
+        "class solution" in c and ("public " in c or "int " in c),
+        "public int " in c,
+        "public boolean " in c,
+        "public string " in c,
+        "public long " in c,
+        "public void " in c,
+        "public list<" in c,
+        "public list" in c and "<" in c,
+        "new int[" in c,
+        "int[] " in c,
+        "arraylist" in c,
+        "hashmap" in c,
+        "linked list" in c,
+        "linkedlist" in c,
+        "system.out" in c,
+        "throws exception" in c,
+    ]):
+        return "java"
+    # C++
+    if any([
+        "#include" in c,
+        "vector<" in c,
+        "unordered_map" in c,
+        "cout <<" in c,
+        "nullptr" in c,
+        "std::" in c,
+        "int main()" in c,
+    ]):
+        return "cpp"
+    # Python
+    if any([
+        "def solution" in c,
+        "def two_sum" in c,
+        "self." in c,
+        "def " in c and ":" in c,
+        "import " in c and "from " in c,
+        "print(" in c,
+    ]):
+        return "python"
+    # JavaScript
+    if any([
+        "console.log" in c,
+        "const " in c,
+        "function " in c,
+        "let " in c,
+        "===" in c,
+    ]):
+        return "javascript"
+    return "python"  # default fallback
+
+
+
+def analyze_with_gemini(code: str, language: str, approach: str, confidence: float, all_scores: dict) -> dict:
     scores_text = "\n".join([
         f"  - {name}: {score}%"
         for name, score in all_scores.items()
@@ -30,7 +87,7 @@ DL confidence threshold: {DL_CONFIDENCE_THRESHOLD}%
 Allowed approach labels (choose ONLY from these):
 {allowed_labels_text}
 
-Here is the student's code:
+Here is the student's code in {language}:
 ```
 {code}
 ```
@@ -153,6 +210,9 @@ def parse_response(text: str) -> dict:
 
 async def get_verdict_tips(code: str, language: str, problem_name: str, verdict: str) -> dict:
 
+    # Always auto-detect language from code to avoid mismatch
+    detected_language = detect_language_from_code(code)
+
     verdict_prompts = {
         "wrong_answer":          "The solution produces incorrect output for some test cases.",
         "time_limit_exceeded":   "The solution is too slow and exceeds the time limit.",
@@ -167,7 +227,7 @@ async def get_verdict_tips(code: str, language: str, problem_name: str, verdict:
 You are a coding mentor helping a student fix their LeetCode solution.
 
 Problem: {problem_name}
-Language: {language}
+Language: {detected_language}
 Verdict: {verdict_context}
 
 Code:
@@ -191,6 +251,58 @@ Return ONLY a JSON object in this exact format with no extra text:
         messages=[{"role": "user", "content": prompt}],
         max_tokens=500,
         temperature=0.4,
+    )
+
+    raw = response.choices[0].message.content.strip()
+    raw = re.sub(r"```json|```", "", raw).strip()
+    return json.loads(raw)
+
+
+async def predict_correctness(code: str, language: str, problem_name: str) -> dict:
+    # Always auto-detect language from code — do NOT trust what the frontend sends
+    detected_language = detect_language_from_code(code)
+
+    prompt = f"""You are an expert coding coach reviewing a student's LeetCode solution BEFORE it is run.
+
+Problem: {problem_name}
+Language: {detected_language}
+
+IMPORTANT RULES:
+- The language above ({detected_language}) has been auto-detected from the code itself. It is correct.
+- Do NOT flag or mention any language mismatch in your response.
+- Evaluate the code purely as {detected_language} code.
+- Focus only on logic, correctness, edge cases, and efficiency.
+
+Code:
+```{detected_language}
+{code}
+```
+
+Analyze the code carefully and predict whether it is likely correct or not.
+Check for:
+- Logical errors or wrong algorithm
+- Common edge cases (empty input, single element, negative numbers, overflow)
+- Off-by-one errors
+- Obvious TLE patterns (nested loops that could be O(n²) or worse when O(n) is expected)
+- Language-specific syntax errors (e.g., missing semicolons, unmatched braces, wrong keyword)
+- Runtime issues specific to {detected_language}
+
+Return ONLY a JSON object in this exact format with no extra text:
+{{
+  "prediction": "likely_correct" | "likely_wrong" | "likely_tle" | "likely_error" | "likely_compilation_error",
+  "confidence": "high" | "medium" | "low",
+  "summary": "One sentence summary of your verdict (do NOT mention language mismatch)",
+  "issues": ["issue 1", "issue 2"]
+}}
+
+If no issues found, set issues to an empty array [].
+"""
+
+    response = client.chat.completions.create(
+        model="llama-3.3-70b-versatile",
+        messages=[{"role": "user", "content": prompt}],
+        max_tokens=400,
+        temperature=0.2,
     )
 
     raw = response.choices[0].message.content.strip()

@@ -4,7 +4,7 @@ from services.dl_analyzer import get_code_embedding, get_embedding_summary, pred
 from services.gemini_service import analyze_with_gemini
 from services.supabase_service import save_submission, save_analysis
 from services.score_service import calculate_readiness_score
-from services.gemini_service import get_verdict_tips
+from services.gemini_service import get_verdict_tips, predict_correctness
 
 router = APIRouter()
 
@@ -30,6 +30,7 @@ def analyze_code(input: CodeInput):
     # Step 3 — Groq analysis
     analysis = analyze_with_gemini(
         code=input.code,
+        language=input.language,
         approach=approach["predicted_approach"],
         confidence=approach["confidence"],
         all_scores=approach["all_scores"]
@@ -103,6 +104,7 @@ def analyze_code_only(input: CodeInput):
     approach = predict_approach(input.code)
     analysis = analyze_with_gemini(
         code=input.code,
+        language=input.language,
         approach=approach["predicted_approach"],
         confidence=approach["confidence"],
         all_scores=approach["all_scores"]
@@ -133,6 +135,7 @@ def save_submission_endpoint(input: CodeInput):
     approach = predict_approach(input.code)
     analysis = analyze_with_gemini(
         code=input.code,
+        language=input.language,
         approach=approach["predicted_approach"],
         confidence=approach["confidence"],
         all_scores=approach["all_scores"]
@@ -178,6 +181,29 @@ async def analyze_verdict(request: VerdictRequest):
             request.language,
             request.problem_name,
             request.verdict
+        )
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+class PreCheckRequest(BaseModel):
+    code: str
+    language: str
+    problem_name: str
+
+@router.post("/pre-check")
+async def pre_check_solution(request: PreCheckRequest):
+    """
+    Uses Groq to predict if the solution is correct BEFORE running on LeetCode.
+    """
+    if not request.code.strip():
+        raise HTTPException(status_code=400, detail="Code cannot be empty")
+    try:
+        result = await predict_correctness(
+            request.code,
+            request.language,
+            request.problem_name,
         )
         return result
     except Exception as e:

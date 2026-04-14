@@ -59,6 +59,42 @@ function getLanguage() {
     }
   }
 
+  // ── Detect language from actual editor code content ───────
+  const code = (getCodeFromEditor() || "").toLowerCase();
+  if (
+    code.includes("class solution") ||
+    code.includes("public int ") ||
+    code.includes("public boolean ") ||
+    code.includes("public string ") ||
+    code.includes("public long ") ||
+    code.includes("public list<") ||
+    code.includes("public void ") ||
+    code.includes("arraylist") ||
+    code.includes("hashmap") ||
+    code.includes("linkedlist") ||
+    code.includes("new int[") ||
+    code.includes("int[] ") ||
+    code.includes("system.out")
+  ) return "java";
+
+  if (
+    code.includes("#include") ||
+    code.includes("vector<") ||
+    code.includes("unordered_map") ||
+    code.includes("cout <<") ||
+    code.includes("nullptr") ||
+    code.includes("std::")
+  ) return "cpp";
+
+  if (
+    code.includes("console.log") ||
+    code.includes("var ") ||
+    code.includes("const ") ||
+    code.includes("let ") ||
+    code.includes("function ") ||
+    code.includes("===")
+  ) return "javascript";
+
   const pageText = document.body.innerText.toLowerCase();
   if (
     pageText.includes("public class solution") ||
@@ -225,20 +261,21 @@ function renderResults(data, problemName, language, code) {
   document.getElementById("cc-content").innerHTML = `
     <div id="cc-save-area">
       <button class="cc-save-btn" id="cc-save-btn">💾 Save to History</button>
-      <button id="cc-check-btn" style="
+      <button id="cc-precheck-btn" style="
         width:100%;
         margin-top:8px;
-        background: #1e3a5f;
-        border: 1px solid #3b82f6;
-        color: #60a5fa;
+        background: #1a2e1a;
+        border: 1px solid #22c55e;
+        color: #4ade80;
         font-size:13px;
         font-weight:600;
         padding:8px;
         border-radius:10px;
         cursor:pointer;
-      ">🔍 Check Result</button>
+      ">🔮 Pre-Check (AI Prediction)</button>
     </div>
 
+    <div id="cc-precheck-area"></div>
     <div id="cc-verdict-area"></div>
 
     <div class="cc-section">
@@ -311,26 +348,104 @@ function renderResults(data, problemName, language, code) {
     }
   });
 
-  // ── Check Result button listener (independent of save) ────
-  document.getElementById("cc-check-btn").addEventListener("click", () => {
-    const verdict = scanPageForVerdict();
-    if (verdict) {
-      renderVerdict(verdict);
-    } else {
-      const verdictArea = document.getElementById("cc-verdict-area");
-      if (verdictArea)
-        verdictArea.innerHTML = `
-        <div style="color:#94a3b8; font-size:12px; text-align:center; padding:10px;">
-          No result found yet. Please Run or Submit your code first.
+  // ── Pre-Check button listener ─────────────────────────────
+  document.getElementById("cc-precheck-btn").addEventListener("click", async () => {
+    // Clear any previous LeetCode execution results to avoid confusion
+    const verdictArea = document.getElementById("cc-verdict-area");
+    if (verdictArea) verdictArea.innerHTML = "";
+
+    const preCheckArea = document.getElementById("cc-precheck-area");
+    const preCheckBtn = document.getElementById("cc-precheck-btn");
+
+    preCheckArea.innerHTML = `
+      <div style="
+        background: rgba(34,197,94,0.05);
+        border: 1px solid rgba(34,197,94,0.2);
+        border-radius:10px;
+        padding:12px;
+        margin-bottom:12px;
+        text-align:center;
+        color:#94a3b8;
+        font-size:12px;
+      ">⏳ AI is analyzing your code...</div>`;
+
+    preCheckBtn.disabled = true;
+    preCheckBtn.textContent = "🔮 Analyzing...";
+
+    // Fetch fresh code directly right now so we don't use stale closure variables
+    const freshCode = getCodeFromEditor();
+    const freshLanguage = getLanguage();
+    
+    try {
+      const res = await fetch(`${API}/pre-check`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code: freshCode, language: freshLanguage, problem_name: problemName }),
+      });
+      const data = await res.json();
+
+      const predictionConfig = {
+        likely_correct: { icon: "✅", color: "#22c55e", bg: "rgba(34,197,94,0.1)",  border: "rgba(34,197,94,0.3)",  label: "Likely Correct" },
+        likely_wrong:   { icon: "❌", color: "#ef4444", bg: "rgba(239,68,68,0.1)",   border: "rgba(239,68,68,0.3)",   label: "Likely Wrong Answer" },
+        likely_tle:     { icon: "⏱️", color: "#f97316", bg: "rgba(249,115,22,0.1)",  border: "rgba(249,115,22,0.3)",  label: "Likely TLE" },
+        likely_error:   { icon: "💥", color: "#a855f7", bg: "rgba(168,85,247,0.1)",  border: "rgba(168,85,247,0.3)",  label: "Likely Error" },
+        likely_compilation_error: { icon: "🔧", color: "#6366f1", bg: "rgba(99,102,241,0.1)", border: "rgba(99,102,241,0.3)", label: "Likely Compilation Error" },
+      };
+
+      const cfg = predictionConfig[data.prediction] || predictionConfig["likely_wrong"];
+      const issuesHTML = (data.issues || []).length > 0
+        ? `<div style="text-align:left; margin-top:10px; border-top: 1px solid ${cfg.border}; padding-top:10px;">
+             <div style="font-size:11px; color:#94a3b8; margin-bottom:6px;">⚠️ Potential Issues:</div>
+             ${data.issues.map(issue => `<div style="font-size:12px; color:#cbd5e1; padding:3px 0;">• ${issue}</div>`).join("")}
+           </div>`
+        : "";
+
+      const confidenceBadge = {
+        high:   { bg: "#166534", color: "#4ade80", text: "High Confidence" },
+        medium: { bg: "#78350f", color: "#fbbf24", text: "Medium Confidence" },
+        low:    { bg: "#1e1b4b", color: "#a5b4fc", text: "Low Confidence" },
+      }[data.confidence] || { bg: "#1e1b4b", color: "#a5b4fc", text: "Low Confidence" };
+
+      preCheckArea.innerHTML = `
+        <div style="
+          background: ${cfg.bg};
+          border: 2px solid ${cfg.border};
+          border-radius: 12px;
+          padding: 16px;
+          margin-bottom: 14px;
+          text-align: center;
+        ">
+          <div style="font-size:28px; margin-bottom:4px;">${cfg.icon}</div>
+          <div style="font-size:18px; font-weight:800; color:${cfg.color}; margin-bottom:4px;">${cfg.label}</div>
+          <span style="
+            background: ${confidenceBadge.bg};
+            color: ${confidenceBadge.color};
+            font-size:10px;
+            font-weight:600;
+            padding:2px 8px;
+            border-radius:20px;
+            display:inline-block;
+            margin-bottom:10px;
+          ">${confidenceBadge.text}</span>
+          <div style="font-size:12px; color:#cbd5e1; text-align:left;">${data.summary}</div>
+          ${issuesHTML}
         </div>`;
+
+    } catch (err) {
+      preCheckArea.innerHTML = `<div style="color:#ef4444; font-size:12px; padding:8px;">❌ Pre-check failed. Make sure backend is running.</div>`;
+    } finally {
+      preCheckBtn.disabled = false;
+      preCheckBtn.textContent = "🔮 Pre-Check (AI Prediction)";
     }
   });
 
-  // Auto-check the result on screen immediately after rendering the sidebar
-  // so verdict appears right away without requiring a manual button click
+  // Auto-check for an existing result output on the screen immediately
+  // after rendering the sidebar, so if there is a verdict available it appears right away
   setTimeout(() => {
-    const checkBtn = document.getElementById("cc-check-btn");
-    if (checkBtn) checkBtn.click();
+    const verdict = scanPageForVerdict();
+    if (verdict) {
+      renderVerdict(verdict);
+    }
   }, 150);
 }
 
@@ -452,6 +567,10 @@ function getVerdictConfig(verdict) {
 async function renderVerdict(verdict) {
   const verdictArea = document.getElementById("cc-verdict-area");
   if (!verdictArea) return;
+
+  // Clear any existing pre-check predictions to avoid confusion
+  const preCheckArea = document.getElementById("cc-precheck-area");
+  if (preCheckArea) preCheckArea.innerHTML = "";
 
   const c = getVerdictConfig(verdict);
   const code = getCodeFromEditor();
