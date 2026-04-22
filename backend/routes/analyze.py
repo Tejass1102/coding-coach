@@ -6,6 +6,7 @@ from services.gemini_service import analyze_with_gemini
 from services.supabase_service import save_submission, save_analysis
 from services.score_service import calculate_readiness_score
 from services.gemini_service import get_verdict_tips, predict_correctness
+from services.leetcode_service import fetch_problem_metadata, fetch_daily_challenge
 
 router = APIRouter()
 
@@ -37,11 +38,16 @@ def analyze_code(input: CodeInput):
         all_scores=approach["all_scores"]
     )
 
-    # Step 4 — Save to Supabase
+    # Step 4 — Fetch LeetCode tags & similar questions, then save to Supabase
+    metadata = fetch_problem_metadata(input.problem_name)
+    problem_tags = metadata.get("tags", [])
+    similar_questions = metadata.get("similar_questions", [])
+    
     submission_id = save_submission(
         problem_name=input.problem_name,
         language=input.language,
-        code=input.code
+        code=input.code,
+        problem_tags=problem_tags
     )
     analysis_id = save_analysis(
         submission_id=submission_id,
@@ -50,14 +56,19 @@ def analyze_code(input: CodeInput):
         embedding_summary=summary
     )
 
+    # Fetch daily challenge for extension payload
+    daily_challenge = fetch_daily_challenge()
+
     return {
         "submission_id": submission_id,
         "analysis_id": analysis_id,
         "problem_name": input.problem_name,
         "language": input.language,
-        "embedding_summary": summary,
         "approach_detection": approach,
         "analysis": analysis,
+        "embedding_summary": summary,
+        "similar_questions": similar_questions,
+        "daily_challenge": daily_challenge,
         "message": "✅ Analysis saved and complete"
     }
 
@@ -111,12 +122,18 @@ def analyze_code_only(input: CodeInput):
         all_scores=approach["all_scores"]
     )
 
+    metadata = fetch_problem_metadata(input.problem_name)
+    similar_questions = metadata.get("similar_questions", [])
+    daily_challenge = fetch_daily_challenge()
+
     return {
         "problem_name": input.problem_name,
         "language": input.language,
         "embedding_summary": summary,
         "approach_detection": approach,
         "analysis": analysis,
+        "similar_questions": similar_questions,
+        "daily_challenge": daily_challenge,
         "saved": False,
         "message": "✅ Analysis complete (not saved)"
     }
@@ -142,10 +159,15 @@ def save_submission_endpoint(input: CodeInput):
         all_scores=approach["all_scores"]
     )
 
+    metadata = fetch_problem_metadata(input.problem_name)
+    problem_tags = metadata.get("tags", [])
+    similar_questions = metadata.get("similar_questions", [])
+    
     submission_id = save_submission(
         problem_name=input.problem_name,
         language=input.language,
-        code=input.code
+        code=input.code,
+        problem_tags=problem_tags
     )
     analysis_id = save_analysis(
         submission_id=submission_id,
@@ -153,6 +175,8 @@ def save_submission_endpoint(input: CodeInput):
         analysis=analysis,
         embedding_summary=summary
     )
+
+    daily_challenge = fetch_daily_challenge()
 
     return {
         "submission_id": submission_id,
@@ -162,6 +186,8 @@ def save_submission_endpoint(input: CodeInput):
         "embedding_summary": summary,
         "approach_detection": approach,
         "analysis": analysis,
+        "similar_questions": similar_questions,
+        "daily_challenge": daily_challenge,
         "saved": True,
         "message": "✅ Analysis saved successfully"
     }

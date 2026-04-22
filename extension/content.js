@@ -113,13 +113,16 @@ function createSidebar() {
   sidebar.id = "coding-coach-sidebar";
   sidebar.innerHTML = `
     <div id="cc-header">
-      <h2>⚡ Coding Coach</h2>
+      <h2>
+        <div id="cc-header-logo">⚡</div>
+        Coding Coach
+      </h2>
       <button id="cc-close">✕</button>
     </div>
     <div id="cc-content">
       <div class="cc-loading">
-        <span class="cc-loading-spinner">⚙️</span>
-        <div>Analyzing your code...</div>
+        <div class="cc-loading-spinner"></div>
+        <div style="font-size:13px;">Analyzing your code…</div>
       </div>
     </div>
   `;
@@ -194,10 +197,10 @@ async function analyzeCode() {
 
   document.getElementById("cc-content").innerHTML = `
   <div class="cc-loading">
-    <span class="cc-loading-spinner">⚙️</span>
-    <div style="color: #94a3b8;">Analyzing your code...</div>
-    <div style="color: #475569; font-size: 11px;">
-      First load may take ~30 seconds to wake up server
+    <div class="cc-loading-spinner"></div>
+    <div style="font-size:13px;">Analyzing your code…</div>
+    <div style="color:#1e293b; font-size:11px;">
+      First load may take ~30 seconds
     </div>
   </div>
   `;
@@ -258,20 +261,59 @@ function renderResults(data, problemName, language, code) {
     )
     .join("");
 
+  // Similar Questions and Daily Challenge HTML
+  let dailyHTML = "";
+  if (data.daily_challenge && data.daily_challenge.title) {
+    dailyHTML = `
+      <div class="cc-section" style="margin-bottom:12px;">
+        <div class="cc-section-title">🔥 Daily Challenge</div>
+        <a href="https://leetcode.com${data.daily_challenge.link}" target="_blank" class="cc-daily-card">
+          <div class="cc-daily-title">${data.daily_challenge.title}</div>
+          <div class="cc-daily-meta">
+            <span class="cc-daily-diff">${data.daily_challenge.difficulty}</span>
+            <span class="cc-daily-date">${data.daily_challenge.date}</span>
+          </div>
+        </a>
+      </div>
+    `;
+  }
+
+  let similarHTML = "";
+  if (data.similar_questions && data.similar_questions.length > 0) {
+    const simList = data.similar_questions.map(q => `
+      <a href="https://leetcode.com/problems/${q.slug}/" target="_blank" class="cc-sim-card">
+        <div class="cc-sim-title">${q.title}</div>
+        <div class="cc-sim-meta">
+          <span class="cc-sim-diff">${q.difficulty}</span>
+          <span style="color:#64748b; font-size:14px;">↗</span>
+        </div>
+      </a>
+    `).join("");
+    similarHTML = `
+      <div class="cc-section">
+        <div class="cc-section-title">🎯 Similar Questions</div>
+        ${simList}
+      </div>
+    `;
+  }
+
   document.getElementById("cc-content").innerHTML = `
     <div id="cc-save-area">
       <button class="cc-save-btn" id="cc-save-btn">💾 Save to History</button>
       <button id="cc-precheck-btn" style="
         width:100%;
         margin-top:8px;
-        background: #1a2e1a;
-        border: 1px solid #22c55e;
+        background: rgba(34,197,94,0.07);
+        border: 1px solid rgba(34,197,94,0.25);
         color: #4ade80;
-        font-size:13px;
+        font-size:12px;
         font-weight:600;
-        padding:8px;
+        padding:9px;
         border-radius:10px;
         cursor:pointer;
+        font-family: 'Inter', -apple-system, sans-serif;
+        letter-spacing: 0.01em;
+        transition: all 0.2s;
       ">🔮 Pre-Check (AI Prediction)</button>
     </div>
 
@@ -320,6 +362,9 @@ function renderResults(data, problemName, language, code) {
       <div class="cc-section-title">✅ Good Practices</div>
       ${goodHTML}
     </div>
+    
+    ${dailyHTML}
+    ${similarHTML}
   `;
 
   // ── Save button listener ──────────────────────────────────

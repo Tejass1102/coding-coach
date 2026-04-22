@@ -11,14 +11,15 @@ supabase: Client = create_client(
 print("✅ Supabase connected")
 
 
-def save_submission(problem_name: str, language: str, code: str) -> str:
+def save_submission(problem_name: str, language: str, code: str, problem_tags: list = None) -> str:
     # Delete any previous submission for the same problem so only the latest is kept
     supabase.table("submissions").delete().eq("problem_name", problem_name).execute()
 
     result = supabase.table("submissions").insert({
         "problem_name": problem_name,
         "language": language,
-        "code": code
+        "code": code,
+        "problem_tags": problem_tags or []
     }).execute()
     return result.data[0]["id"]
 

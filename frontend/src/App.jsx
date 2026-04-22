@@ -6,7 +6,7 @@ import ScorePage from "./pages/ScorePage";
 function App() {
   return (
     <Router>
-      <div className="min-h-screen bg-slate-900">
+      <div style={{ minHeight: "100vh", background: "#000000" }}>
         <Navbar />
         <Routes>
           <Route path="/" element={<ScorePage />} />

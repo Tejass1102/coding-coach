@@ -4,34 +4,78 @@ function Navbar() {
   const location = useLocation();
 
   const navItems = [
-    { path: "/history", label: "📜 History" },
+    { path: "/", label: "Score", icon: "⚡" },
+    { path: "/history", label: "History", icon: "📜" },
   ];
 
   return (
-    <nav className="bg-slate-800 border-b border-slate-700 px-6 py-4">
-      <div className="max-w-6xl mx-auto flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <span className="text-2xl">⚡</span>
-          <span className="text-xl font-bold text-white">Coding Coach</span>
-          <span className="text-xs bg-blue-600 text-white px-2 py-1 rounded-full">
-            DL Powered
+    <nav style={{
+      position: "sticky",
+      top: 0,
+      zIndex: 100,
+      background: "rgba(0, 0, 0, 0.85)",
+      backdropFilter: "blur(24px)",
+      WebkitBackdropFilter: "blur(24px)",
+      borderBottom: "1px solid rgba(255,255,255,0.08)",
+    }}>
+      <div style={{
+        maxWidth: "1200px",
+        margin: "0 auto",
+        padding: "0 24px",
+        height: "60px",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+      }}>
+
+        {/* Logo and Brand */}
+        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+          <div style={{
+            width: "32px", height: "32px",
+            borderRadius: "8px",
+            background: "linear-gradient(135deg, #6366f1, #06b6d4)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            fontSize: "16px",
+            boxShadow: "0 0 16px rgba(99,102,241,0.4)",
+          }}>
+            ⚡
+          </div>
+          <span style={{ fontWeight: 700, fontSize: "16px", color: "#f1f5f9", letterSpacing: "-0.02em" }}>
+            Coding Coach
           </span>
         </div>
-        <div className="flex gap-2">
-          {navItems.map((item) => (
-            <Link
-              key={item.path}
-              to={item.path}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                location.pathname === item.path
-                  ? "bg-blue-600 text-white"
-                  : "text-slate-400 hover:text-white hover:bg-slate-700"
-              }`}
-            >
-              {item.label}
-            </Link>
-          ))}
+
+        {/* Nav links */}
+        <div style={{ display: "flex", gap: "4px" }}>
+          {navItems.map((item) => {
+            const active = location.pathname === item.path;
+            return (
+              <Link
+                key={item.path}
+                to={item.path}
+                style={{
+                  display: "flex", alignItems: "center", gap: "6px",
+                  padding: "6px 14px",
+                  borderRadius: "8px",
+                  fontSize: "13px",
+                  fontWeight: 500,
+                  textDecoration: "none",
+                  transition: "all 0.2s",
+                  background: active ? "rgba(99,102,241,0.15)" : "transparent",
+                  border: active ? "1px solid rgba(99,102,241,0.25)" : "1px solid transparent",
+                  color: active ? "#a5b4fc" : "#94a3b8",
+                  fontFamily: "'Inter', sans-serif",
+                }}
+                onMouseEnter={e => { if (!active) e.currentTarget.style.color = "#f1f5f9"; }}
+                onMouseLeave={e => { if (!active) e.currentTarget.style.color = "#94a3b8"; }}
+              >
+                <span>{item.icon}</span>
+                {item.label}
+              </Link>
+            );
+          })}
         </div>
+
       </div>
     </nav>
   );

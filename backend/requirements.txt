@@ -5,3 +5,4 @@ transformers
 supabase
 groq
 python-dotenv
+httpx
