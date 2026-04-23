@@ -1,4 +1,4 @@
-const API = "http://127.0.0.1:8000/api";
+const API = "https://tejas1102-coding-coach-backend.hf.space/api";
 
 let sidebar = null;
 let currentResult = null;
