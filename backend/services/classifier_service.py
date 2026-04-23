@@ -20,20 +20,27 @@ class ApproachClassifier(nn.Module):
     def forward(self, x):
         return self.network(x)
 
-print("⏳ Loading Approach Classifier...")
-checkpoint = torch.load(
-    "models/approach_classifier.pt",
-    map_location="cpu",
-    weights_only=False
-)
-classifier = ApproachClassifier(
-    input_dim=checkpoint["input_dim"],
-    num_classes=checkpoint["num_classes"]
-)
-classifier.load_state_dict(checkpoint["model_state_dict"])
-classifier.eval()
-LABEL_NAMES = checkpoint["label_names"]
-print("✅ Approach Classifier loaded")
+classifier = None
+LABEL_NAMES = None
+
+def _get_classifier():
+    global classifier, LABEL_NAMES
+    if classifier is None:
+        print("⏳ Loading Approach Classifier...")
+        checkpoint = torch.load(
+            "models/approach_classifier.pt",
+            map_location="cpu",
+            weights_only=False
+        )
+        classifier = ApproachClassifier(
+            input_dim=checkpoint["input_dim"],
+            num_classes=checkpoint["num_classes"]
+        )
+        classifier.load_state_dict(checkpoint["model_state_dict"])
+        classifier.eval()
+        LABEL_NAMES = checkpoint["label_names"]
+        print("✅ Approach Classifier loaded")
+    return classifier, LABEL_NAMES
 
 
 def rule_based_detection(code: str):
@@ -94,15 +101,18 @@ def predict_approach(code: str) -> dict:
     # Get ML model scores always (for display)
     embedding = get_code_embedding(code)
     tensor = torch.tensor(embedding, dtype=torch.float32).unsqueeze(0)
+    
+    cls_model, labels = _get_classifier()
+    
     with torch.no_grad():
-        outputs = classifier(tensor)
+        outputs = cls_model(tensor)
         probabilities = torch.softmax(outputs, dim=1).squeeze().numpy()
         predicted_idx = int(np.argmax(probabilities))
 
     # Build all_scores with clean Title Case keys so UI can map colors
     all_scores = {
-        LABEL_NAMES[i].replace("_", " ").title(): round(float(probabilities[i]) * 100, 2)
-        for i in range(len(LABEL_NAMES))
+        labels[i].replace("_", " ").title(): round(float(probabilities[i]) * 100, 2)
+        for i in range(len(labels))
     }
 
     if rule_result:
@@ -117,7 +127,7 @@ def predict_approach(code: str) -> dict:
         }
 
     # Fall back to ML model
-    best_label = LABEL_NAMES[predicted_idx].replace("_", " ").title()
+    best_label = labels[predicted_idx].replace("_", " ").title()
     return {
         "predicted_approach": best_label,
         "confidence": round(float(probabilities[predicted_idx]) * 100, 2),

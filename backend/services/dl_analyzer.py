@@ -6,7 +6,10 @@ from sentence_transformers import SentenceTransformer
 
 # Load a small, CPU‑friendly transformer
 # all-MiniLM-L6-v2 is ~22M params and runs fine on CPU
-_model = SentenceTransformer("all-MiniLM-L6-v2")
+# Load a small, CPU‑friendly transformer
+# all-MiniLM-L6-v2 is ~22M params and runs fine on CPU
+_model = None
+_APPROACH_EMB = None
 
 # Define a small set of canonical approaches.
 # You can adjust these labels and descriptions as needed.
@@ -21,10 +24,19 @@ _APPROACH_DESCRIPTIONS: Dict[str, str] = {
     "hash_map": "Use a hash table/map/dictionary to store key-value pairs for O(1) lookup and efficient counting or grouping.",
 }
 
-# Pre‑compute embeddings for the approach descriptions once at import time
 _APPROACH_KEYS: List[str] = list(_APPROACH_DESCRIPTIONS.keys())
-_APPROACH_TEXTS: List[str] = [_APPROACH_DESCRIPTIONS[k] for k in _APPROACH_KEYS]
-_APPROACH_EMB = _model.encode(_APPROACH_TEXTS, normalize_embeddings=True)
+
+def _get_model():
+    global _model, _APPROACH_EMB
+    if _model is None:
+        print("⏳ Loading SentenceTransformer model...")
+        _model = SentenceTransformer("all-MiniLM-L6-v2")
+        
+        # Pre‑compute embeddings for the approach descriptions once at load time
+        _APPROACH_TEXTS = [_APPROACH_DESCRIPTIONS[k] for k in _APPROACH_KEYS]
+        _APPROACH_EMB = _model.encode(_APPROACH_TEXTS, normalize_embeddings=True)
+        print("✅ SentenceTransformer loaded")
+    return _model, _APPROACH_EMB
 
 
 def _cosine_similarity(a: np.ndarray, b: np.ndarray) -> float:
@@ -38,7 +50,8 @@ def get_code_embedding(code: str) -> List[float]:
 
     This is a drop‑in replacement for the old CodeBERT-based get_code_embedding.
     """
-    emb = _model.encode(code, normalize_embeddings=False)
+    model, _ = _get_model()
+    emb = model.encode(code, normalize_embeddings=False)
     return emb.astype(float).tolist()
 
 
@@ -54,7 +67,9 @@ def get_embedding_summary(embedding: List[float]) -> str:
         return "Embedding summary not available (zero vector)."
     vec_norm = vec / norm
 
-    sims = [_cosine_similarity(vec_norm, appr_emb) for appr_emb in _APPROACH_EMB]
+    _, approach_emb = _get_model()
+
+    sims = [_cosine_similarity(vec_norm, appr_emb) for appr_emb in approach_emb]
     sims = np.array(sims)
 
     # Get top-3 approaches
