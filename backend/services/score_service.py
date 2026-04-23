@@ -246,8 +246,8 @@ def calculate_readiness_score() -> dict:
 
     # Cleaner next-milestone calculation
     next_ms = None
-    for _, (lo_n, _) in enumerate(_VOLUME_TIERS[:-1]):
-        hi_n, hi_p = _VOLUME_TIERS[_ + 1]
+    for i, (lo_n, _lo_p) in enumerate(_VOLUME_TIERS[:-1]):
+        hi_n, hi_p = _VOLUME_TIERS[i + 1]
         if total_problems < hi_n:
             next_ms = hi_n
             break
