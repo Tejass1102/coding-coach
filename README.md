@@ -6,7 +6,7 @@ A full-stack, AI-powered LeetCode assistant that analyzes your code in real-time
 
 ## 🎯 Features
 
-### 1. Chrome Extension (Live Editor Integration)
+### Chrome Extension (Live Editor Integration)
 Injected directly into your LeetCode toolbar, the extension provides real-time feedback:
 - **🔮 AI Pre-Check** — Predicts if your code will pass, fail (Wrong Answer), or TLE before you even submit it to LeetCode.
 - **🧠 Approach Detection** — Uses a custom PyTorch Deep Learning model to identify the algorithm pattern you used (e.g., Dynamic Programming, Sliding Window).
@@ -14,7 +14,7 @@ Injected directly into your LeetCode toolbar, the extension provides real-time f
 - **🚀 Optimization Tips** — AI-generated suggestions targeted at improving your specific solution.
 - **👀 Live Verdict Tracking** — Automatically scans LeetCode test results (Accepted, Compile Error, WA, TLE) on every run and gives immediate tips to fix failing tests.
 
-### 2. Web Dashboard (Performance Analytics)
+### Web Dashboard (Performance Analytics)
 A dedicated React frontend to visualize your progress over time:
 - **Interview Readiness Score** — A weighted score (0-100) based on your consistency, code quality, and algorithm mastery.
 - **Category Heatmap** — Visually highlights the data structures you excel at and those you need to practice.
