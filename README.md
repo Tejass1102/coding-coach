@@ -2,7 +2,7 @@
 
 A full-stack, AI-powered LeetCode assistant that analyzes your code in real-time using Deep Learning. It detects algorithm patterns, predicts outcomes, explains complexity, and provides a comprehensive web dashboard to track your interview readiness.
 
-🌐 **Live Demo:** [View Dashboard on Vercel](https://your-vercel-link.vercel.app) *(Replace with your actual Vercel link)*
+
 
 ---
 
@@ -113,65 +113,11 @@ The backend utilizes a highly efficient **Neurosymbolic AI** pipeline:
 **Why F1 is the primary metric:** A classifier that always predicts "Brute Force" would score ~40% accuracy on this dataset without learning anything useful. Weighted F1 penalizes the model for ignoring minority classes.
 
 
-
----
-
-## 💻 Running Locally (On Your PC)
-
-If you want to run the entire project on your own machine without deploying anything, follow these steps:
-
-### Prerequisites
-- Python 3.9+
-- Node.js 18+
-- A [Supabase](https://supabase.com) Project (free tier is fine)
-- A [Groq](https://console.groq.com/keys) API Key (free)
-
-### 1. Set up the Backend
-```bash
-cd backend
-python -m venv venv
-# On Windows: venv\Scripts\activate
-# On Mac/Linux: source venv/bin/activate
-
-pip install -r requirements.txt
-```
-Create a `.env` file in the `backend/` folder:
-```env
-SUPABASE_URL=your_supabase_url
-SUPABASE_KEY=your_supabase_key
-GROQ_API_KEY=your_groq_api_key
-```
-Run the backend:
-```bash
-uvicorn main:app --reload
-```
-
-### 2. Set up the Frontend Dashboard
-Open a new terminal.
-```bash
-cd frontend
-npm install
-```
-Create a `.env` file in the `frontend/` folder:
-```env
-VITE_API_URL=http://127.0.0.1:8000/api
-```
-Run the frontend:
-```bash
-npm run dev
-```
-
-### 3. Load the Chrome Extension
-1. Open Chrome and navigate to `chrome://extensions`.
-2. Toggle **Developer mode** ON (top right corner).
-3. Click **Load unpacked** and select the `extension/` folder from this project.
-4. Ensure line 1 of `extension/content.js` points to your local backend:
-   `const API = "http://127.0.0.1:8000/api";`
-5. Open LeetCode and test it out!
-
 ---
 
 ## 🚀 Setup & Deployment (Cloud)
+
+🌐 **Live Demo:** https://coding-coach-git-main-tejass1102s-projects.vercel.app
 
 ### 1. Database (Supabase)
 1. Create a project on [Supabase](https://supabase.com).
@@ -208,9 +154,7 @@ This application showcases applied Deep Learning integrated into a practical, sc
 - Implements **Neurosymbolic AI** — combining neural network probabilistic classification with deterministic rule-based symbolic detection.
 - Handles complex state management and cross-origin communication between a sandboxed Chrome Extension, a Python cloud environment, and a React SPA.
 
-📄 **Project Documentation Files:**
-- [PROJECT_DOCUMENTATION.md](./PROJECT_DOCUMENTATION.md) — Complete file-by-file breakdown, data flow, and deployment history.
-- [MODEL_EVALUATION.md](./MODEL_EVALUATION.md) — Dataset construction, model architecture, evaluation metrics, and confusion matrix.
+
 
 ---
 
