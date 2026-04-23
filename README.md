@@ -28,18 +28,18 @@ A dedicated React frontend to visualize your progress over time:
 
 ```mermaid
 flowchart TD
-    A[LeetCode Editor] -->|content.js| B(Chrome Extension)
-    B <-->|REST API| C{FastAPI Backend (Hugging Face)}
+    A["LeetCode Editor"] -->|"content.js"| B("Chrome Extension")
+    B <-->|"REST API"| C{"FastAPI Backend (Hugging Face)"}
     
-    C <-->|Read/Write| D[(Supabase PostgreSQL)]
+    C <-->|"Read/Write"| D[("Supabase PostgreSQL")]
     
-    C -->|1. Extract Embeddings| E[sentence-transformers]
-    E -->|2. Predict Approach| F[Custom PyTorch Classifier]
+    C -->|"1. Extract Embeddings"| E["sentence-transformers"]
+    E -->|"2. Predict Approach"| F["Custom PyTorch Classifier"]
     
-    C -->|3. Generate Tips| G[Groq Llama-3.3]
+    C -->|"3. Generate Tips"| G["Groq Llama-3.3"]
     
-    H[React Frontend (Vercel)] <-->|REST API| C
-    H -->|Visualize| I[Interview Readiness Dashboard]
+    H["React Frontend (Vercel)"] <-->|"REST API"| C
+    H -->|"Visualize"| I["Interview Readiness Dashboard"]
 ```
 
 | Layer | Technology | Hosting / Deployment |
