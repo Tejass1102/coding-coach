@@ -51,7 +51,7 @@ flowchart TD
 | **Database** | Supabase (PostgreSQL) | Supabase Cloud |
 | **Browser Extension**| Vanilla JS, CSS, Manifest V3 | Local (Load Unpacked) |
 
-### 🧠 The Machine Learning Pipeline
+### 🧠 Deep Learning Pipeline
 The backend utilizes a highly efficient **Neurosymbolic AI** pipeline:
 1. **Embedding**: `all-MiniLM-L6-v2` maps raw code into a 384-dimensional semantic vector.
 2. **Classification**: A custom-trained PyTorch feed-forward neural network (`approach_classifier.pt`) processes the vector to classify the code into one of several base algorithmic approaches (e.g., Two Pointers, Prefix Sum).
