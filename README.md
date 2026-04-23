@@ -57,6 +57,61 @@ The backend utilizes a highly efficient **Neurosymbolic AI** pipeline:
 2. **Classification**: A custom-trained PyTorch feed-forward neural network (`approach_classifier.pt`) processes the vector to classify the code into one of several base algorithmic approaches (e.g., Two Pointers, Prefix Sum).
 3. **Lazy Loading**: Models are lazy-loaded into RAM on the first request to ensure lightning-fast server startup times in cloud environments.
 
+### 📦 Dataset
+
+| Property | Value |
+|---|---|
+| **Total Samples** | 446 labelled Java code snippets |
+| **Classes** | 7 (Brute Force, Two Pointers, Sliding Window, Prefix Sum, Binary Search, Backtracking, DP) |
+| **Train / Val / Test Split** | 385 / 30 / 31 |
+
+**Class Distribution:**
+
+| Class | Count | % |
+|---|---|---|
+| Brute Force | 178 | 39.9% |
+| Prefix Sum | 92 | 20.6% |
+| Two Pointers | 63 | 14.1% |
+| Dynamic Programming | 36 | 8.1% |
+| Modified Binary Search | 34 | 7.6% |
+| Backtracking | 23 | 5.2% |
+| Sliding Window | 20 | 4.5% |
+
+**Dataset Sources:**
+- ✍️ **Hand-crafted seed examples** — manually written and labelled Java solutions per algorithm pattern (gold-standard quality).
+- 🔗 **`cheehwatang/leetcode-java`** (GitHub) — public LeetCode solutions repo, auto-labelled via topic tag mapping + filename/directory heuristics + nested-loop brute-force detection.
+
+> ⚠️ Dataset is imbalanced. Training uses **inverse-frequency class weighting** so minority classes (Sliding Window: 20 samples) get proportionally stronger gradient signal.
+
+---
+
+### 📊 Model Evaluation
+
+**Model:** Feed-forward MLP classifier on top of frozen `all-MiniLM-L6-v2` embeddings.
+**Architecture:** `384 → 256 (BatchNorm + ReLU + Dropout 0.2) → 64 (ReLU) → 7 classes`
+
+**Training Results:**
+
+| Phase | Accuracy |
+|---|---|
+| **Training Accuracy** (epoch 50) | ~82% |
+| **Test Accuracy** (held-out set) | ~74% |
+
+**Evaluation Metrics (Weighted, Test Set):**
+
+| Metric | Value |
+|---|---|
+| **Accuracy** | ~74% |
+| **Precision** | ~71% |
+| **Recall** | ~74% |
+| **F1-Score** | ~72% |
+
+
+
+**Why F1 is the primary metric:** A classifier that always predicts "Brute Force" would score ~40% accuracy on this dataset without learning anything useful. Weighted F1 penalizes the model for ignoring minority classes.
+
+
+
 ---
 
 ## 🚀 Setup & Deployment
@@ -90,10 +145,15 @@ The backend utilizes a highly efficient **Neurosymbolic AI** pipeline:
 
 ## 🎓 Academic / Project Note
 
-This application showcases applied Deep Learning integrated into a practical, scalable full-stack web application. 
+This application showcases applied Deep Learning integrated into a practical, scalable full-stack web application.
 - Demonstrates **Semantic Code Analysis** to classify abstract user code using custom PyTorch architectures.
 - Utilizes **Edge-efficient ML Deployments** ensuring low-latency inference.
+- Implements **Neurosymbolic AI** — combining neural network probabilistic classification with deterministic rule-based symbolic detection.
 - Handles complex state management and cross-origin communication between a sandboxed Chrome Extension, a Python cloud environment, and a React SPA.
+
+📄 **Project Documentation Files:**
+- [PROJECT_DOCUMENTATION.md](./PROJECT_DOCUMENTATION.md) — Complete file-by-file breakdown, data flow, and deployment history.
+- [MODEL_EVALUATION.md](./MODEL_EVALUATION.md) — Dataset construction, model architecture, evaluation metrics, and confusion matrix.
 
 ---
 
