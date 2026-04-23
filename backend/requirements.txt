@@ -2,6 +2,7 @@ fastapi
 uvicorn
 torch
 transformers
+sentence-transformers
 supabase
 groq
 python-dotenv
