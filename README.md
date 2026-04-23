@@ -1,131 +1,101 @@
 # ⚡ Coding Coach
 
-A powerful Chrome Extension that analyzes your LeetCode code in real-time using Deep Learning. It detects algorithm patterns, explains complexity, dynamically tracks your test results, and gives AI-powered optimization tips to make you interview-ready.
+A full-stack, AI-powered LeetCode assistant that analyzes your code in real-time using Deep Learning. It detects algorithm patterns, predicts outcomes, explains complexity, and provides a comprehensive web dashboard to track your interview readiness.
 
 ---
 
-## 🎯 What It Does
+## 🎯 Features
 
-When you're solving a problem on LeetCode, simply click the **⚡ Coding Coach** button injected directly into your toolbar. The extension securely sends your code to a local FastAPI backend and opens an interactive sidebar featuring:
+### 1. Chrome Extension (Live Editor Integration)
+Injected directly into your LeetCode toolbar, the extension provides real-time feedback:
+- **🔮 AI Pre-Check** — Predicts if your code will pass, fail (Wrong Answer), or TLE before you even submit it to LeetCode.
+- **🧠 Approach Detection** — Uses a custom PyTorch Deep Learning model to identify the algorithm pattern you used (e.g., Dynamic Programming, Sliding Window).
+- **⏱️ Complexity Analysis** — Extracts Time and Space complexity.
+- **🚀 Optimization Tips** — AI-generated suggestions targeted at improving your specific solution.
+- **👀 Live Verdict Tracking** — Automatically scans LeetCode test results (Accepted, Compile Error, WA, TLE) on every run and gives immediate tips to fix failing tests.
 
-- **Approach Detection** — Identifies precisely which algorithm pattern you used (e.g., Brute Force, Hash Map, Binary Search).
-- **Approach Explanation** — A plain English explanation of your logical flow.
-- **Complexity Analysis** — Live extraction of Time complexity, Space complexity, and overall Difficulty level.
-- **Optimization Tips** — AI-generated suggestions targeted at improving your specific solution.
-- **Good Practices** — Highlighting what you did cleanly and efficiently.
-- **Live Verdict Tracking** — Automatically scans your LeetCode test results (Accepted, Compile Error, Wrong Answer, TLE) on every run and dynamically provides immediate, context-aware tips to fix failing tests.
-- **Save to History** — Pushes your attempts and scores to a Supabase database to track progress over time.
+### 2. Web Dashboard (Performance Analytics)
+A dedicated React frontend to visualize your progress over time:
+- **Interview Readiness Score** — A weighted score (0-100) based on your consistency, code quality, and algorithm mastery.
+- **Category Heatmap** — Visually highlights the data structures you excel at and those you need to practice.
+- **Strong & Weak Areas** — Tracks which approaches you rely on and which you avoid.
+- **Next Challenge Recommendations** — Algorithmically suggests LeetCode problems targeted specifically at your weak areas.
+- **Daily Challenge** — Keeps you consistent with a featured daily problem.
 
 ---
 
-## 🧠 How It Works (The Architecture)
+## 🏗️ Architecture & Tech Stack
 
 ```mermaid
 flowchart TD
     A[LeetCode Editor] -->|content.js| B(Chrome Extension)
-    B -->|FastAPI| C{Local Backend}
+    B <-->|REST API| C{FastAPI Backend (Hugging Face)}
     
-    C -->|DL Embedding| D[all-MiniLM-L6-v2 Model]
-    C -->|Syntax Parsing| E[Rules Engine / Regex]
+    C <-->|Read/Write| D[(Supabase PostgreSQL)]
     
-    D --> F{Hybrid Confidence Scorer}
-    E --> F
+    C -->|1. Extract Embeddings| E[sentence-transformers]
+    E -->|2. Predict Approach| F[Custom PyTorch Classifier]
     
-    F -->|Classified Approach| G[Groq Llama-3.3-70b]
-    G -->|Human-readable Feedback| H[Sidebar Render]
+    C -->|3. Generate Tips| G[Groq Llama-3.3]
+    
+    H[React Frontend (Vercel)] <-->|REST API| C
+    H -->|Visualize| I[Interview Readiness Dashboard]
 ```
 
-### Deep Learning Pipeline
-
-| Component | Details |
-|---|---|
-| **Embedding Model** | `all-MiniLM-L6-v2` — highly efficient, CPU-friendly Sentence Transformer mapping code to 384-dim semantic vectors. |
-| **Detection Method** | Zero-Shot Semantic Similarity mapped against canonical algorithm definitions. |
-| **Hybrid Logic** | Seamless combination of Neural Network probabilistic similarity (ML) + deterministic Symbolic software architectures (Regex/Syntax). |
-
-### 8 Base Algorithm Classes
-*Brute Force, Sliding Window, Dynamic Programming, Backtracking, Modified Binary Search, Prefix Sum, Hash Map, Two Pointers.*
-
-### Tech Stack
-
-| Layer | Technology |
-|---|---|
-| **Frontend** | Chrome Extension (Manifest V3, Vanilla JS) |
-| **Backend API** | Python, FastAPI, Uvicorn |
-| **Deep Learning** | `sentence-transformers`, `torch`, `numpy` |
-| **LLM Inference** | Groq API (`llama-3.3-70b-versatile`) |
-| **Database** | Supabase (PostgreSQL) |
-
----
-
-## 🚀 Setup & Installation
-
-### 1. Clone the repo
-```bash
-git clone https://github.com/yourusername/coding-coach.git
-cd coding-coach
-```
-
-### 2. Set up Python backend
-```bash
-cd backend
-python -m venv venv
-venv\Scripts\activate        # Windows
-source venv/bin/activate     # Mac/Linux
-
-pip install fastapi uvicorn sentence-transformers numpy supabase groq pydantic
-```
-
-### 3. Configure environment variables
-Create `backend/.env`:
-```env
-SUPABASE_URL=your_supabase_url
-SUPABASE_KEY=your_supabase_anon_key
-GROQ_API_KEY=your_groq_api_key
-```
-
-> **Get free keys:**
-> - Groq API: [console.groq.com](https://console.groq.com)
-> - Supabase: [supabase.com](https://supabase.com)
-
-### 4. Start the backend server
-```bash
-cd backend
-uvicorn main:app --reload
-```
-*Server runs at `http://127.0.0.1:8000`. Hot-reloading enabled.*
-
-### 5. Load the Chrome Extension
-1. Open Chrome and go to `chrome://extensions`
-2. Enable **Developer mode** (top right toggle)
-3. Click **Load unpacked**
-4. Select the `coding-coach/extension` folder
-5. Extension is now active on LeetCode! ✅
-
----
-
-## 🧪 API Endpoints
-
-| Endpoint | Method | Description |
+| Layer | Technology | Hosting / Deployment |
 |---|---|---|
-| `/` | GET | Health check |
-| `/api/analyze-only` | POST | Full approach analysis without database commit |
-| `/api/analyze-verdict` | POST | Generates specific failure-tips tailored to LeetCode verdicts |
-| `/api/save-submission` | POST | Saves analysis and code submission to Supabase |
-| `/api/history` | GET | Fetches saved submission history |
-| `/api/score` | GET | Computes comprehensive interview readiness score |
+| **Frontend Dashboard** | React, Vite, React Router | Vercel |
+| **Backend API** | Python, FastAPI, Uvicorn | Hugging Face Spaces (Docker) |
+| **Deep Learning** | `torch`, `sentence-transformers`, `numpy` | - |
+| **LLM Inference** | Groq API (`llama-3.3-70b-versatile`) | - |
+| **Database** | Supabase (PostgreSQL) | Supabase Cloud |
+| **Browser Extension**| Vanilla JS, CSS, Manifest V3 | Local (Load Unpacked) |
+
+### 🧠 The Machine Learning Pipeline
+The backend utilizes a highly efficient **Neurosymbolic AI** pipeline:
+1. **Embedding**: `all-MiniLM-L6-v2` maps raw code into a 384-dimensional semantic vector.
+2. **Classification**: A custom-trained PyTorch feed-forward neural network (`approach_classifier.pt`) processes the vector to classify the code into one of several base algorithmic approaches (e.g., Two Pointers, Prefix Sum).
+3. **Lazy Loading**: Models are lazy-loaded into RAM on the first request to ensure lightning-fast server startup times in cloud environments.
+
+---
+
+## 🚀 Setup & Deployment
+
+### 1. Database (Supabase)
+1. Create a project on [Supabase](https://supabase.com).
+2. Set up the `submissions` and `problems` tables as defined in the project schema.
+3. Get your `SUPABASE_URL` and `SUPABASE_KEY`.
+
+### 2. Backend (Hugging Face Spaces)
+1. Create a new **Docker** Space on [Hugging Face](https://huggingface.co/spaces).
+2. Add your secrets (`SUPABASE_URL`, `SUPABASE_KEY`, `GROQ_API_KEY`) in the Space settings.
+3. Upload the contents of the `backend/` folder (including the `Dockerfile`).
+4. Grab your live URL (e.g., `https://username-coding-coach-backend.hf.space`).
+
+### 3. Frontend (Vercel)
+1. Import the repository into [Vercel](https://vercel.com).
+2. Set the Root Directory to `frontend`.
+3. Add the Environment Variable: `VITE_API_URL = https://your-huggingface-url/api`.
+4. Deploy!
+
+### 4. Chrome Extension (Local)
+1. Open `extension/content.js`.
+2. Change the `API` constant on line 1 to your Hugging Face API URL.
+3. Open Chrome and go to `chrome://extensions`.
+4. Enable **Developer mode** and click **Load unpacked**.
+5. Select the `extension/` folder.
+6. Open LeetCode and start coding! ⚡
 
 ---
 
 ## 🎓 Academic / Project Note
 
-This application showcases applied Deep Learning integrated into a practical web application. 
-- Demonstrates **Zero-Shot Semantic Similarity** to classify abstract user code without requiring massive labelled custom datasets.
-- Utilizes **Edge-efficient ML Deployments** (22M parameter models) ensuring low-latency inference on consumer CPUs. 
-- Implements **Neurosymbolic AI** — trusting standard code lexers/parsers for deterministic structures, and neural embeddings for abstract algorithmic intent.
+This application showcases applied Deep Learning integrated into a practical, scalable full-stack web application. 
+- Demonstrates **Semantic Code Analysis** to classify abstract user code using custom PyTorch architectures.
+- Utilizes **Edge-efficient ML Deployments** ensuring low-latency inference.
+- Handles complex state management and cross-origin communication between a sandboxed Chrome Extension, a Python cloud environment, and a React SPA.
 
 ---
 
 ## 📝 License
-
 MIT License — feel free to use and modify.
