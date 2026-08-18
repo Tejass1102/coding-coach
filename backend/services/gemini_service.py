@@ -11,7 +11,9 @@ load_dotenv()
 client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 print("✅ Groq configured")
 GROQ_MODEL = os.getenv("GROQ_MODEL", "llama-3.3-70b-specdec")
+print(f"🤖 Using Groq model: {GROQ_MODEL}")
 DL_CONFIDENCE_THRESHOLD = float(os.getenv("DL_CONFIDENCE_THRESHOLD", "60"))
+
 
 
 def detect_language_from_code(code: str) -> str:
