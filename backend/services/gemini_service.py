@@ -8,7 +8,7 @@ load_dotenv()
 
 client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 print("✅ Groq configured")
-GROQ_MODEL = os.getenv("GROQ_MODEL", "llama-3.3-70b-specdec")
+GROQ_MODEL = "openai/gpt-oss-120b"
 print(f"🤖 Using Groq model: {GROQ_MODEL}")
 DL_CONFIDENCE_THRESHOLD = float(os.getenv("DL_CONFIDENCE_THRESHOLD", "60"))
 
