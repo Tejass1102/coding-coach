@@ -10,6 +10,7 @@ load_dotenv()
 
 client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 print("✅ Groq configured")
+GROQ_MODEL = os.getenv("GROQ_MODEL", "llama-3.3-70b-specdec")
 DL_CONFIDENCE_THRESHOLD = float(os.getenv("DL_CONFIDENCE_THRESHOLD", "60"))
 
 
@@ -123,7 +124,7 @@ Keep your response concise and student-friendly.
 """
 
     response = client.chat.completions.create(
-        model="llama-3.3-70b-versatile",
+        model=GROQ_MODEL,
         messages=[
             {
                 "role": "system",
@@ -247,7 +248,7 @@ Return ONLY a JSON object in this exact format with no extra text:
 """
 
     response = client.chat.completions.create(
-        model="llama-3.3-70b-versatile",
+        model=GROQ_MODEL,
         messages=[{"role": "user", "content": prompt}],
         max_tokens=500,
         temperature=0.4,
@@ -299,7 +300,7 @@ If no issues found, set issues to an empty array [].
 """
 
     response = client.chat.completions.create(
-        model="llama-3.3-70b-versatile",
+        model=GROQ_MODEL,
         messages=[{"role": "user", "content": prompt}],
         max_tokens=400,
         temperature=0.2,
