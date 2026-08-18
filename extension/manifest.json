@@ -4,7 +4,7 @@
   "version": "1.0",
   "description": "AI-powered code analysis using Deep Learning — get instant feedback on your LeetCode solutions",
   "permissions": ["activeTab", "scripting", "storage"],
-  "host_permissions": ["https://leetcode.com/*", "http://127.0.0.1:8000/*"],
+  "host_permissions": ["https://leetcode.com/*", "http://127.0.0.1:8000/*", "https://tejas1102-coding-coach-backend.hf.space/*"],
   "content_scripts": [
     {
       "matches": ["https://leetcode.com/problems/*"],

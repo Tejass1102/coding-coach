@@ -220,7 +220,7 @@ async function analyzeCode() {
     document.getElementById("cc-content").innerHTML = `
       <div class="cc-error">
         ❌ Could not connect to Coding Coach backend.<br><br>
-        Make sure your FastAPI server is running at <strong>http://127.0.0.1:8000</strong>
+        The server returned an error. Check that the backend is running at <strong>${API}</strong>
       </div>
     `;
   }
