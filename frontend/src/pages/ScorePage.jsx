@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
-import axios from "axios";
+import api from "../lib/api";
 
-const API = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000/api";
 
 // ── Colour helpers ─────────────────────────────────────────────────────────────
 const levelMeta = {
@@ -420,7 +419,7 @@ function ScorePage() {
 
   const fetchScore = async () => {
     try {
-      const res = await axios.get(`${API}/score`);
+      const res = await api.get(`/score`);
       setScoreData(res.data);
     } catch (err) {
       console.error(err);

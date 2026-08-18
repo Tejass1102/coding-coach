@@ -1,7 +1,15 @@
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 
 function Navbar() {
   const location = useLocation();
+  const navigate = useNavigate();
+  const { user, logout } = useAuth();
+
+  const handleLogout = async () => {
+    await logout();
+    navigate("/login");
+  };
 
   const navItems = [
     { path: "/", label: "Score", icon: "⚡" },
@@ -45,8 +53,8 @@ function Navbar() {
           </span>
         </div>
 
-        {/* Nav links */}
-        <div style={{ display: "flex", gap: "4px" }}>
+        {/* Nav links + user info */}
+        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
           {navItems.map((item) => {
             const active = location.pathname === item.path;
             return (
@@ -74,6 +82,45 @@ function Navbar() {
               </Link>
             );
           })}
+
+          {/* Divider */}
+          <div style={{ width: 1, height: 20, background: "rgba(255,255,255,0.1)", margin: "0 4px" }} />
+
+          {/* User email */}
+          {user && (
+            <span style={{
+              fontSize: 12,
+              color: "rgba(255,255,255,0.35)",
+              maxWidth: 140,
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
+            }}>
+              {user.email}
+            </span>
+          )}
+
+          {/* Logout button */}
+          <button
+            id="logout-btn"
+            onClick={handleLogout}
+            style={{
+              padding: "6px 14px",
+              borderRadius: "8px",
+              fontSize: "13px",
+              fontWeight: 500,
+              border: "1px solid rgba(239,68,68,0.25)",
+              background: "rgba(239,68,68,0.08)",
+              color: "#f87171",
+              cursor: "pointer",
+              transition: "all 0.2s",
+              fontFamily: "'Inter', sans-serif",
+            }}
+            onMouseEnter={e => { e.currentTarget.style.background = "rgba(239,68,68,0.18)"; }}
+            onMouseLeave={e => { e.currentTarget.style.background = "rgba(239,68,68,0.08)"; }}
+          >
+            Sign Out
+          </button>
         </div>
 
       </div>

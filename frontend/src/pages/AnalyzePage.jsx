@@ -1,8 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import Editor from "@monaco-editor/react";
-import axios from "axios";
+import api from "../lib/api";
 
-const API = "http://127.0.0.1:8000/api";
 const DEBOUNCE_DELAY = 3000; // 3 seconds
 
 function AnalyzePage() {
@@ -55,7 +54,7 @@ function AnalyzePage() {
     setLoading(true);
     setError(null);
     try {
-      const response = await axios.post(`${API}/analyze-only`, {
+      const response = await api.post(`/analyze-only`, {
         code,
         language,
         problem_name: problemName || "Unknown Problem",
@@ -73,7 +72,7 @@ function AnalyzePage() {
     setSaving(true);
     setError(null);
     try {
-      const response = await axios.post(`${API}/save-submission`, {
+      const response = await api.post(`/save-submission`, {
         code,
         language,
         problem_name: problemName || "Unknown Problem",

@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
 from services.dl_analyzer import get_code_embedding, get_embedding_summary
 from services.classifier_service import predict_approach
@@ -7,6 +7,8 @@ from services.supabase_service import save_submission, save_analysis
 from services.score_service import calculate_readiness_score
 from services.gemini_service import get_verdict_tips, predict_correctness
 from services.leetcode_service import fetch_problem_metadata, fetch_daily_challenge
+from dependencies.auth import get_current_user
+
 
 router = APIRouter()
 
@@ -16,7 +18,7 @@ class CodeInput(BaseModel):
     problem_name: str = "Unknown Problem"
 
 @router.post("/analyze")
-def analyze_code(input: CodeInput):
+def analyze_code(input: CodeInput, current_user: dict = Depends(get_current_user)):
     if not input.code.strip():
         raise HTTPException(status_code=400, detail="Code cannot be empty")
     if len(input.code) > 10000:
@@ -74,7 +76,7 @@ def analyze_code(input: CodeInput):
 
 
 @router.get("/history")
-def get_history():
+def get_history(current_user: dict = Depends(get_current_user)):
     from services.supabase_service import get_all_submissions
     submissions = get_all_submissions()
     return {
@@ -84,7 +86,7 @@ def get_history():
 
 
 @router.get("/submission/{submission_id}")
-def get_submission(submission_id: str):
+def get_submission(submission_id: str, current_user: dict = Depends(get_current_user)):
     from services.supabase_service import get_submission_by_id
     submission = get_submission_by_id(submission_id)
     if not submission:
@@ -92,7 +94,7 @@ def get_submission(submission_id: str):
     return submission
 
 @router.get("/score")
-def get_readiness_score():
+def get_readiness_score(current_user: dict = Depends(get_current_user)):
     """
     Calculates and returns interview readiness score
     based on all past submissions
@@ -101,7 +103,7 @@ def get_readiness_score():
     return score_data
 
 @router.post("/analyze-only")
-def analyze_code_only(input: CodeInput):
+def analyze_code_only(input: CodeInput, current_user: dict = Depends(get_current_user)):
     """
     Analyzes code without saving to database
     Used for auto-analyze feature
@@ -140,7 +142,7 @@ def analyze_code_only(input: CodeInput):
 
 
 @router.post("/save-submission")
-def save_submission_endpoint(input: CodeInput):
+def save_submission_endpoint(input: CodeInput, current_user: dict = Depends(get_current_user)):
     """
     Saves submission to database explicitly
     Called when student clicks Save button
@@ -201,7 +203,7 @@ class VerdictRequest(BaseModel):
     verdict: str
 
 @router.post("/analyze-verdict")
-async def analyze_verdict(request: VerdictRequest):
+async def analyze_verdict(request: VerdictRequest, current_user: dict = Depends(get_current_user)):
     try:
         result = await get_verdict_tips(
             request.code,
@@ -220,7 +222,7 @@ class PreCheckRequest(BaseModel):
     problem_name: str
 
 @router.post("/pre-check")
-async def pre_check_solution(request: PreCheckRequest):
+async def pre_check_solution(request: PreCheckRequest, current_user: dict = Depends(get_current_user)):
     """
     Uses Groq to predict if the solution is correct BEFORE running on LeetCode.
     """
