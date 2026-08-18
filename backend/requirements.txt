@@ -8,4 +8,5 @@ groq
 python-dotenv
 httpx
 python-jose[cryptography]
-passlib[bcrypt]
+passlib[bcrypt]
+email-validator
