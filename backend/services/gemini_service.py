@@ -3,8 +3,6 @@ import os
 import re
 import json
 from dotenv import load_dotenv
-from pyparsing import line
-from pyparsing import line
 
 load_dotenv()
 
