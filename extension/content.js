@@ -105,6 +105,80 @@ function getLanguage() {
   return "python";
 }
 
+// ── Auth Helpers ──────────────────────────────────────────
+async function getAuthToken() {
+  return new Promise((resolve) => {
+    chrome.storage.local.get(['cc_access_token'], (res) => resolve(res.cc_access_token));
+  });
+}
+
+async function setAuthToken(token) {
+  return new Promise((resolve) => {
+    chrome.storage.local.set({ cc_access_token: token }, resolve);
+  });
+}
+
+async function logout() {
+  await setAuthToken(null);
+  const btn = document.getElementById("cc-logout-btn");
+  if(btn) btn.style.display = "none";
+  renderLoginForm();
+}
+
+function renderLoginForm() {
+  document.getElementById("cc-content").innerHTML = `
+    <div class="cc-login-container">
+      <div class="cc-login-icon">🔒</div>
+      <div class="cc-login-title">Sign In Required</div>
+      <div class="cc-login-subtitle">Connect your account to save submissions and get personalized interview scores.</div>
+      <form id="cc-login-form">
+        <input type="email" id="cc-email" placeholder="Email" required class="cc-input" />
+        <input type="password" id="cc-password" placeholder="Password" required class="cc-input" />
+        <button type="submit" class="cc-btn cc-btn-primary" id="cc-login-submit">Sign In</button>
+      </form>
+      <div id="cc-login-error" style="color:#ef4444; font-size:12px; margin-top:8px; display:none; text-align:center;"></div>
+    </div>
+  `;
+
+  document.getElementById("cc-login-form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const email = document.getElementById("cc-email").value;
+    const password = document.getElementById("cc-password").value;
+    const btn = document.getElementById("cc-login-submit");
+    const errorEl = document.getElementById("cc-login-error");
+    
+    btn.disabled = true;
+    btn.textContent = "Signing In...";
+    errorEl.style.display = "none";
+
+    try {
+      const res = await fetch(\`\${API}/auth/login\`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+      const data = await res.json();
+      
+      if (!res.ok) {
+        throw new Error(data.detail || "Login failed");
+      }
+      
+      await setAuthToken(data.access_token);
+      
+      // Now that we are logged in, we can proceed to analyze the code
+      const logoutBtn = document.getElementById("cc-logout-btn");
+      if(logoutBtn) logoutBtn.style.display = "inline-block";
+      
+      analyzeCode();
+    } catch (err) {
+      errorEl.textContent = err.message;
+      errorEl.style.display = "block";
+      btn.disabled = false;
+      btn.textContent = "Sign In";
+    }
+  });
+}
+
 // ── Create sidebar ────────────────────────────────────────
 function createSidebar() {
   if (document.getElementById("coding-coach-sidebar")) return;
@@ -117,7 +191,10 @@ function createSidebar() {
         <div id="cc-header-logo">⚡</div>
         Coding Coach
       </h2>
-      <button id="cc-close">✕</button>
+      <div>
+        <button id="cc-logout-btn" style="display:none; font-size:12px; background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.2); color:#fff; border-radius:6px; padding:4px 10px; cursor:pointer; margin-right:8px; font-weight:600; transition:background 0.2s;">Logout</button>
+        <button id="cc-close">✕</button>
+      </div>
     </div>
     <div id="cc-content">
       <div class="cc-loading">
@@ -132,6 +209,8 @@ function createSidebar() {
   document.getElementById("cc-close").addEventListener("click", () => {
     sidebar.classList.remove("open");
   });
+
+  document.getElementById("cc-logout-btn").addEventListener("click", logout);
 }
 
 // ── Inject analyze button into LeetCode ───────────────────
@@ -195,6 +274,15 @@ async function analyzeCode() {
   currentResult = null;
   lastVerdict = null;
 
+  const token = await getAuthToken();
+  if (!token) {
+    renderLoginForm();
+    return;
+  }
+  
+  const logoutBtn = document.getElementById("cc-logout-btn");
+  if(logoutBtn) logoutBtn.style.display = "inline-block";
+
   document.getElementById("cc-content").innerHTML = `
   <div class="cc-loading">
     <div class="cc-loading-spinner"></div>
@@ -208,10 +296,18 @@ async function analyzeCode() {
   try {
     const response = await fetch(`${API}/analyze-only`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { 
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`
+      },
       body: JSON.stringify({ code, language, problem_name: problemName }),
     });
 
+    if (response.status === 401) {
+      await logout();
+      return;
+    }
+    
     if (!response.ok) throw new Error("API error");
     const data = await response.json();
     currentResult = data;
@@ -374,11 +470,19 @@ function renderResults(data, problemName, language, code) {
     saveBtn.textContent = "💾 Saving...";
 
     try {
+      const token = await getAuthToken();
       const res = await fetch(`${API}/save-submission`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
         body: JSON.stringify({ code, language, problem_name: problemName }),
       });
+      if (res.status === 401) {
+        await logout();
+        return;
+      }
       if (!res.ok) throw new Error("Save failed");
       saveBtn.textContent = "✅ Saved!";
       const saveArea = document.getElementById("cc-save-area");
@@ -422,11 +526,19 @@ function renderResults(data, problemName, language, code) {
     const freshLanguage = getLanguage();
     
     try {
+      const token = await getAuthToken();
       const res = await fetch(`${API}/pre-check`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
         body: JSON.stringify({ code: freshCode, language: freshLanguage, problem_name: problemName }),
       });
+      if (res.status === 401) {
+        await logout();
+        return;
+      }
       const data = await res.json();
 
       const predictionConfig = {
@@ -657,9 +769,13 @@ async function renderVerdict(verdict) {
 
   if (c.showTips) {
     try {
+      const token = await getAuthToken();
       const res = await fetch(`${API}/analyze-verdict`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
         body: JSON.stringify({
           code,
           language,
@@ -667,6 +783,10 @@ async function renderVerdict(verdict) {
           verdict,
         }),
       });
+      if (res.status === 401) {
+        await logout();
+        return;
+      }
       const data = await res.json();
       const tipsEl = document.getElementById("cc-fix-tips");
       if (tipsEl && data.verdict_tips) {
