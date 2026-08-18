@@ -148,8 +148,8 @@ def _volume_points(n: int) -> int:
 
 # ── Main function ──────────────────────────────────────────────────────────────
 
-def calculate_readiness_score() -> dict:
-    submissions = get_all_submissions()
+def calculate_readiness_score(user_id: str) -> dict:
+    submissions = get_all_submissions(user_id)
 
     if not submissions:
         return _empty(0)

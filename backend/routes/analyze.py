@@ -24,6 +24,8 @@ def analyze_code(input: CodeInput, current_user: dict = Depends(get_current_user
     if len(input.code) > 10000:
         raise HTTPException(status_code=400, detail="Code too long")
 
+    user_id = current_user["id"]
+
     # Step 1 — CodeBERT embedding
     embedding = get_code_embedding(input.code)
     summary = get_embedding_summary(embedding)
@@ -44,11 +46,12 @@ def analyze_code(input: CodeInput, current_user: dict = Depends(get_current_user
     metadata = fetch_problem_metadata(input.problem_name)
     problem_tags = metadata.get("tags", [])
     similar_questions = metadata.get("similar_questions", [])
-    
+
     submission_id = save_submission(
         problem_name=input.problem_name,
         language=input.language,
         code=input.code,
+        user_id=user_id,
         problem_tags=problem_tags
     )
     analysis_id = save_analysis(
@@ -78,7 +81,8 @@ def analyze_code(input: CodeInput, current_user: dict = Depends(get_current_user
 @router.get("/history")
 def get_history(current_user: dict = Depends(get_current_user)):
     from services.supabase_service import get_all_submissions
-    submissions = get_all_submissions()
+    user_id = current_user["id"]
+    submissions = get_all_submissions(user_id)
     return {
         "total": len(submissions),
         "submissions": submissions
@@ -88,7 +92,8 @@ def get_history(current_user: dict = Depends(get_current_user)):
 @router.get("/submission/{submission_id}")
 def get_submission(submission_id: str, current_user: dict = Depends(get_current_user)):
     from services.supabase_service import get_submission_by_id
-    submission = get_submission_by_id(submission_id)
+    user_id = current_user["id"]
+    submission = get_submission_by_id(submission_id, user_id)
     if not submission:
         raise HTTPException(status_code=404, detail="Submission not found")
     return submission
@@ -97,16 +102,17 @@ def get_submission(submission_id: str, current_user: dict = Depends(get_current_
 def get_readiness_score(current_user: dict = Depends(get_current_user)):
     """
     Calculates and returns interview readiness score
-    based on all past submissions
+    based on the logged-in user's past submissions only.
     """
-    score_data = calculate_readiness_score()
+    user_id = current_user["id"]
+    score_data = calculate_readiness_score(user_id)
     return score_data
 
 @router.post("/analyze-only")
 def analyze_code_only(input: CodeInput, current_user: dict = Depends(get_current_user)):
     """
-    Analyzes code without saving to database
-    Used for auto-analyze feature
+    Analyzes code without saving to database.
+    Used for auto-analyze feature.
     """
     if not input.code.strip():
         raise HTTPException(status_code=400, detail="Code cannot be empty")
@@ -144,11 +150,13 @@ def analyze_code_only(input: CodeInput, current_user: dict = Depends(get_current
 @router.post("/save-submission")
 def save_submission_endpoint(input: CodeInput, current_user: dict = Depends(get_current_user)):
     """
-    Saves submission to database explicitly
-    Called when student clicks Save button
+    Saves submission to database explicitly.
+    Called when student clicks Save button.
     """
     if not input.code.strip():
         raise HTTPException(status_code=400, detail="Code cannot be empty")
+
+    user_id = current_user["id"]
 
     embedding = get_code_embedding(input.code)
     summary = get_embedding_summary(embedding)
@@ -164,11 +172,12 @@ def save_submission_endpoint(input: CodeInput, current_user: dict = Depends(get_
     metadata = fetch_problem_metadata(input.problem_name)
     problem_tags = metadata.get("tags", [])
     similar_questions = metadata.get("similar_questions", [])
-    
+
     submission_id = save_submission(
         problem_name=input.problem_name,
         language=input.language,
         code=input.code,
+        user_id=user_id,
         problem_tags=problem_tags
     )
     analysis_id = save_analysis(

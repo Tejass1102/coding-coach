@@ -11,14 +11,19 @@ supabase: Client = create_client(
 print("✅ Supabase connected")
 
 
-def save_submission(problem_name: str, language: str, code: str, problem_tags: list = None) -> str:
-    # Delete any previous submission for the same problem so only the latest is kept
-    supabase.table("submissions").delete().eq("problem_name", problem_name).execute()
+def save_submission(problem_name: str, language: str, code: str, user_id: str, problem_tags: list = None) -> str:
+    # Delete any previous submission for the same problem by the same user
+    # so only the latest attempt is kept per user
+    supabase.table("submissions").delete()\
+        .eq("problem_name", problem_name)\
+        .eq("user_id", user_id)\
+        .execute()
 
     result = supabase.table("submissions").insert({
         "problem_name": problem_name,
         "language": language,
         "code": code,
+        "user_id": user_id,
         "problem_tags": problem_tags or []
     }).execute()
     return result.data[0]["id"]
@@ -45,17 +50,19 @@ def save_analysis(
     return result.data[0]["id"]
 
 
-def get_all_submissions() -> list:
+def get_all_submissions(user_id: str) -> list:
     result = supabase.table("submissions")\
         .select("*, analyses(*)")\
+        .eq("user_id", user_id)\
         .order("submitted_at", desc=True)\
         .execute()
     return result.data
 
 
-def get_submission_by_id(submission_id: str) -> dict:
+def get_submission_by_id(submission_id: str, user_id: str) -> dict:
     result = supabase.table("submissions")\
         .select("*, analyses(*)")\
         .eq("id", submission_id)\
+        .eq("user_id", user_id)\
         .execute()
     return result.data[0] if result.data else None
