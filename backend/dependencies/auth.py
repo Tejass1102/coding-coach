@@ -19,6 +19,20 @@ SUPABASE_KEY = os.getenv("SUPABASE_KEY", "")
 security = HTTPBearer()
 
 
+def _derive_username(user) -> str:
+    """
+    Derives a display username from the Supabase user object.
+    Priority: user_metadata.username → full_name (Google OAuth) → name → email prefix
+    """
+    meta = user.user_metadata or {}
+    return (
+        meta.get("username")
+        or meta.get("full_name")
+        or meta.get("name")
+        or (user.email.split("@")[0] if user.email else "user")
+    )
+
+
 def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)) -> dict:
     """
     Validates the Bearer JWT token by calling Supabase Auth.
@@ -42,6 +56,7 @@ def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(securit
         return {
             "id": user.id,
             "email": user.email,
+            "username": _derive_username(user),
             "role": user.role,
         }
 
@@ -53,4 +68,3 @@ def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(securit
             detail=f"Authentication failed: {str(e)}",
             headers={"WWW-Authenticate": "Bearer"},
         )
-

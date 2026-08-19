@@ -3,15 +3,17 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
 export default function LoginPage() {
-  const { login, signup } = useAuth();
+  const { login, signup, loginWithGoogle } = useAuth();
   const navigate = useNavigate();
 
   const [mode, setMode] = useState("login"); // "login" | "signup"
   const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [info, setInfo] = useState("");
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const [showPass, setShowPass] = useState(false);
 
   const handleSubmit = async (e) => {
@@ -24,7 +26,12 @@ export default function LoginPage() {
         await login(email, password);
         navigate("/");
       } else {
-        await signup(email, password);
+        if (!username.trim()) {
+          setError("Username is required.");
+          setLoading(false);
+          return;
+        }
+        await signup(email, password, username.trim());
         setInfo(
           "Account created! Check your email to confirm, then log in."
         );
@@ -35,6 +42,25 @@ export default function LoginPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleGoogle = async () => {
+    setError("");
+    setGoogleLoading(true);
+    try {
+      await loginWithGoogle();
+      // Supabase will redirect — no navigate() needed
+    } catch (err) {
+      setError(err.message || "Google sign-in failed");
+      setGoogleLoading(false);
+    }
+  };
+
+  const switchMode = (newMode) => {
+    setMode(newMode);
+    setError("");
+    setInfo("");
+    setUsername("");
   };
 
   return (
@@ -67,7 +93,7 @@ export default function LoginPage() {
               ...styles.toggleBtn,
               ...(mode === "login" ? styles.toggleActive : {}),
             }}
-            onClick={() => { setMode("login"); setError(""); setInfo(""); }}
+            onClick={() => switchMode("login")}
           >
             Sign In
           </button>
@@ -76,13 +102,80 @@ export default function LoginPage() {
               ...styles.toggleBtn,
               ...(mode === "signup" ? styles.toggleActive : {}),
             }}
-            onClick={() => { setMode("signup"); setError(""); setInfo(""); }}
+            onClick={() => switchMode("signup")}
           >
             Sign Up
           </button>
         </div>
 
+        {/* Google Button */}
+        <button
+          id="google-auth-btn"
+          type="button"
+          onClick={handleGoogle}
+          disabled={googleLoading}
+          style={{
+            ...styles.googleBtn,
+            ...(googleLoading ? styles.googleBtnDisabled : {}),
+          }}
+          onMouseEnter={(e) => {
+            if (!googleLoading) Object.assign(e.currentTarget.style, styles.googleBtnHover);
+          }}
+          onMouseLeave={(e) => {
+            Object.assign(e.currentTarget.style, {
+              background: "rgba(255,255,255,0.05)",
+              borderColor: "rgba(255,255,255,0.12)",
+            });
+          }}
+        >
+          {googleLoading ? (
+            <span style={styles.spinnerRow}>
+              <span style={styles.spinner} /> Redirecting…
+            </span>
+          ) : (
+            <>
+              {/* Google SVG icon */}
+              <svg width="18" height="18" viewBox="0 0 48 48" style={{ flexShrink: 0 }}>
+                <path fill="#FFC107" d="M43.611 20.083H42V20H24v8h11.303c-1.649 4.657-6.08 8-11.303 8-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 12.955 4 4 12.955 4 24s8.955 20 20 20 20-8.955 20-20c0-1.341-.138-2.65-.389-3.917z"/>
+                <path fill="#FF3D00" d="M6.306 14.691l6.571 4.819C14.655 15.108 18.961 12 24 12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 16.318 4 9.656 8.337 6.306 14.691z"/>
+                <path fill="#4CAF50" d="M24 44c5.166 0 9.86-1.977 13.409-5.192l-6.19-5.238A11.91 11.91 0 0 1 24 36c-5.202 0-9.619-3.317-11.283-7.946l-6.522 5.025C9.505 39.556 16.227 44 24 44z"/>
+                <path fill="#1976D2" d="M43.611 20.083H42V20H24v8h11.303a12.04 12.04 0 0 1-4.087 5.571l.003-.002 6.19 5.238C36.971 39.205 44 34 44 24c0-1.341-.138-2.65-.389-3.917z"/>
+              </svg>
+              Continue with Google
+            </>
+          )}
+        </button>
+
+        {/* OR Divider */}
+        <div style={styles.divider}>
+          <div style={styles.dividerLine} />
+          <span style={styles.dividerText}>or</span>
+          <div style={styles.dividerLine} />
+        </div>
+
         <form onSubmit={handleSubmit} style={styles.form}>
+          {/* Username — signup only */}
+          {mode === "signup" && (
+            <div style={styles.fieldGroup}>
+              <label style={styles.label} htmlFor="username">Username</label>
+              <div style={styles.inputWrapper}>
+                <span style={styles.inputIcon}>👤</span>
+                <input
+                  id="username"
+                  type="text"
+                  required
+                  autoComplete="username"
+                  placeholder="e.g. john_doe"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  style={styles.input}
+                  onFocus={(e) => Object.assign(e.target.style, styles.inputFocus)}
+                  onBlur={(e) => Object.assign(e.target.style, { boxShadow: "none", borderColor: "rgba(255,255,255,0.08)" })}
+                />
+              </div>
+            </div>
+          )}
+
           {/* Email */}
           <div style={styles.fieldGroup}>
             <label style={styles.label} htmlFor="email">Email</label>
@@ -165,7 +258,7 @@ export default function LoginPage() {
           {mode === "login" ? "Don't have an account? " : "Already have an account? "}
           <button
             style={styles.switchLink}
-            onClick={() => { setMode(mode === "login" ? "signup" : "login"); setError(""); setInfo(""); }}
+            onClick={() => switchMode(mode === "login" ? "signup" : "login")}
           >
             {mode === "login" ? "Sign Up" : "Sign In"}
           </button>
@@ -188,6 +281,10 @@ export default function LoginPage() {
         #auth-submit-btn:hover:not(:disabled) {
           transform: translateY(-1px);
           box-shadow: 0 8px 30px rgba(167,139,250,0.4);
+        }
+        #google-auth-btn:hover:not(:disabled) {
+          background: rgba(255,255,255,0.09) !important;
+          border-color: rgba(255,255,255,0.22) !important;
         }
       `}</style>
     </div>
@@ -290,7 +387,7 @@ const styles = {
     background: "rgba(255,255,255,0.05)",
     borderRadius: 12,
     padding: 4,
-    marginBottom: 28,
+    marginBottom: 20,
     gap: 4,
   },
   toggleBtn: {
@@ -309,6 +406,48 @@ const styles = {
     background: "rgba(139,92,246,0.25)",
     color: "#a78bfa",
     fontWeight: 600,
+  },
+  googleBtn: {
+    width: "100%",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 10,
+    padding: "11px 16px",
+    background: "rgba(255,255,255,0.05)",
+    border: "1px solid rgba(255,255,255,0.12)",
+    borderRadius: 12,
+    color: "#fff",
+    fontSize: 14,
+    fontWeight: 500,
+    cursor: "pointer",
+    transition: "all 0.2s",
+    marginBottom: 4,
+  },
+  googleBtnDisabled: {
+    opacity: 0.6,
+    cursor: "not-allowed",
+  },
+  googleBtnHover: {
+    background: "rgba(255,255,255,0.09)",
+    borderColor: "rgba(255,255,255,0.22)",
+  },
+  divider: {
+    display: "flex",
+    alignItems: "center",
+    gap: 12,
+    margin: "16px 0",
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    background: "rgba(255,255,255,0.08)",
+  },
+  dividerText: {
+    color: "rgba(255,255,255,0.3)",
+    fontSize: 12,
+    fontWeight: 500,
+    letterSpacing: "0.5px",
   },
   form: {
     display: "flex",

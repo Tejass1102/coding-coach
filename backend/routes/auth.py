@@ -10,6 +10,7 @@ import os
 from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel, EmailStr
 from supabase import create_client, Client
+from typing import Optional
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -21,11 +22,26 @@ def get_supabase() -> Client:
     return create_client(SUPABASE_URL, SUPABASE_KEY)
 
 
+def _derive_username(user) -> str:
+    """
+    Derives a display username from the Supabase user object.
+    Priority: user_metadata.username → full_name (Google OAuth) → name → email prefix
+    """
+    meta = user.user_metadata or {}
+    return (
+        meta.get("username")
+        or meta.get("full_name")
+        or meta.get("name")
+        or (user.email.split("@")[0] if user.email else "user")
+    )
+
+
 # ── Request models ────────────────────────────────────────────────────────────
 
 class AuthRequest(BaseModel):
     email: EmailStr
     password: str
+    username: Optional[str] = None
 
 
 # ── Routes ────────────────────────────────────────────────────────────────────
@@ -51,6 +67,7 @@ def login(body: AuthRequest):
             "user": {
                 "id": response.user.id,
                 "email": response.user.email,
+                "username": _derive_username(response.user),
             },
         }
     except Exception as e:
@@ -62,11 +79,15 @@ def login(body: AuthRequest):
 
 @router.post("/signup")
 def signup(body: AuthRequest):
-    """Create a new account with email + password."""
+    """Create a new account with email + password. Username is stored in user_metadata."""
     supabase = get_supabase()
     try:
+        options = {}
+        if body.username:
+            options["data"] = {"username": body.username}
+
         response = supabase.auth.sign_up(
-            {"email": body.email, "password": body.password}
+            {"email": body.email, "password": body.password, "options": options}
         )
         if not response.user:
             raise HTTPException(
@@ -78,6 +99,7 @@ def signup(body: AuthRequest):
             "user": {
                 "id": response.user.id,
                 "email": response.user.email,
+                "username": _derive_username(response.user),
             },
         }
     except Exception as e:

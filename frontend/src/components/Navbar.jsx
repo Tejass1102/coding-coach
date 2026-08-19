@@ -4,7 +4,7 @@ import { useAuth } from "../context/AuthContext";
 function Navbar() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { user, logout } = useAuth();
+  const { user, username, logout } = useAuth();
 
   const handleLogout = async () => {
     await logout();
@@ -86,18 +86,42 @@ function Navbar() {
           {/* Divider */}
           <div style={{ width: 1, height: 20, background: "rgba(255,255,255,0.1)", margin: "0 4px" }} />
 
-          {/* User email */}
+          {/* User avatar + username */}
           {user && (
-            <span style={{
-              fontSize: 12,
-              color: "rgba(255,255,255,0.35)",
-              maxWidth: 140,
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-              whiteSpace: "nowrap",
+            <div style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 7,
             }}>
-              {user.email}
-            </span>
+              {/* Avatar circle with initial */}
+              <div style={{
+                width: 28,
+                height: 28,
+                borderRadius: "50%",
+                background: "linear-gradient(135deg, #7c3aed, #3b82f6)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontSize: 12,
+                fontWeight: 700,
+                color: "#fff",
+                flexShrink: 0,
+                textTransform: "uppercase",
+              }}>
+                {username ? username[0] : "?"}
+              </div>
+              <span style={{
+                fontSize: 13,
+                fontWeight: 500,
+                color: "rgba(255,255,255,0.7)",
+                maxWidth: 120,
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
+              }}>
+                {username}
+              </span>
+            </div>
           )}
 
           {/* Logout button */}
